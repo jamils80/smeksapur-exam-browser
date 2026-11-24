@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ujian Online - SMK Negeri 1 Purwoasri</title>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
@@ -10,16 +11,18 @@
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 16px;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       user-select: none;
+      -webkit-user-select: none;
       overflow-x: hidden;
       background-color: #0f172a;
     }
 
+    /* Background Dinamis dari Google Drive */
     .bg-animated {
       position: fixed;
       inset: -5%;
@@ -35,7 +38,7 @@
     .bg-overlay {
       position: fixed;
       inset: 0;
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(30, 58, 138, 0.58));
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.76), rgba(30, 58, 138, 0.58));
       backdrop-filter: blur(3px);
       z-index: -1;
     }
@@ -51,13 +54,14 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* Kartu Utama (Glassmorphism) */
     .box {
       width: 100%;
       max-width: 780px;
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.4);
-      padding: 30px;
+      padding: 26px;
       border-radius: 16px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
       animation: munculHalus 0.7s ease-out;
@@ -65,22 +69,23 @@
 
     #halaman-login { max-width: 480px; }
 
+    /* Kop Header Resmi Sekolah */
     .kop-header {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 16px;
+      gap: 14px;
       padding-bottom: 16px;
       margin-bottom: 20px;
       border-bottom: 3px double #1e293b;
       text-align: left;
     }
 
-    .kop-logo { width: 68px; height: auto; object-fit: contain; flex-shrink: 0; }
+    .kop-logo { width: 64px; height: auto; object-fit: contain; flex-shrink: 0; }
     .kop-teks { line-height: 1.3; color: #0f172a; }
-    .kop-teks .baris-1 { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
-    .kop-teks .baris-2 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; }
-    .kop-teks .baris-3 { font-size: 17px; font-weight: 800; color: #1e3a8a; margin-top: 2px; }
+    .kop-teks .baris-1 { font-size: 12px; font-weight: 600; letter-spacing: 0.4px; }
+    .kop-teks .baris-2 { font-size: 13px; font-weight: 700; letter-spacing: 0.4px; }
+    .kop-teks .baris-3 { font-size: 16px; font-weight: 800; color: #1e3a8a; margin-top: 2px; }
 
     input[type="text"], input[type="password"] {
       padding: 13px 15px;
@@ -116,11 +121,12 @@
     .btn-selesai { background: linear-gradient(135deg, #16a34a, #15803d); }
     .btn-selesai:hover { box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35); }
 
+    /* Badge Tipe Soal */
     .badge-tipe {
       display: inline-block;
       font-size: 11px;
       font-weight: 700;
-      padding: 3px 9px;
+      padding: 4px 10px;
       border-radius: 20px;
       margin-bottom: 8px;
       text-transform: uppercase;
@@ -129,12 +135,13 @@
     .badge-pgk { background: #fef3c7; color: #b45309; }
     .badge-bs { background: #f3e8ff; color: #7e22ce; }
 
+    /* Opsi Jawaban PG & PGK */
     .opsi-label {
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      padding: 10px 14px;
-      margin: 6px 0;
+      padding: 11px 14px;
+      margin: 7px 0;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
@@ -142,8 +149,9 @@
       transition: all 0.2s ease;
     }
     .opsi-label:hover { background: #eff6ff; border-color: #93c5fd; }
-    .opsi-label input { margin-top: 3px; width: auto; cursor: pointer; }
+    .opsi-label input { margin-top: 3px; width: auto; cursor: pointer; transform: scale(1.15); }
 
+    /* Tabel Pilihan Ganda Kompleks Benar-Salah */
     .tabel-bs {
       width: 100%;
       border-collapse: collapse;
@@ -152,9 +160,19 @@
     }
     .tabel-bs th, .tabel-bs td { border: 1px solid #cbd5e1; padding: 10px; }
     .tabel-bs th { background: #f1f5f9; color: #1e293b; text-align: center; }
-    .tabel-bs td.tengah { text-align: center; width: 85px; }
+    .tabel-bs td.tengah { text-align: center; width: 75px; }
+    .tabel-bs input[type="radio"] { transform: scale(1.2); cursor: pointer; }
 
     #halaman-ujian { display: none; }
+
+    /* Responsif untuk layar HP Android kecil */
+    @media (max-width: 480px) {
+      .box { padding: 18px; }
+      .kop-logo { width: 52px; }
+      .kop-teks .baris-1 { font-size: 10px; }
+      .kop-teks .baris-2 { font-size: 11px; }
+      .kop-teks .baris-3 { font-size: 14px; }
+    }
   </style>
 </head>
 <body oncontextmenu="return false;">
@@ -184,7 +202,7 @@
   </div>
 
   <!-- 2. HALAMAN UJIAN -->
-  <div id="halaman-ujian" class="box" style="margin: 30px auto;">
+  <div id="halaman-ujian" class="box" style="margin: 20px auto;">
     <div class="kop-header">
       <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" alt="Logo SMK Negeri 1 Purwoasri" class="kop-logo">
       <div class="kop-teks">
@@ -194,7 +212,7 @@
       </div>
     </div>
 
-    <div id="info-peserta" style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px 14px; border-radius: 6px; margin-bottom: 20px; font-weight: bold; color: #1e3a8a;"></div>
+    <div id="info-peserta" style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px 14px; border-radius: 6px; margin-bottom: 20px; font-weight: bold; color: #1e3a8a; font-size: 14px;"></div>
     <div id="wadah-soal"></div>
     <button class="btn-selesai" onclick="konfirmasiKirim()">Selesai & Kirim Jawaban</button>
   </div>
@@ -208,6 +226,10 @@
     let jumlahPelanggaranSaatIni = 0;
     let ujianBerjalan = false;
     let sedangProsesLogout = false;
+    let timerBlur = null;
+
+    // Deteksi perangkat mobile (Android / iOS)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     async function panggilGAS(payload) {
       const res = await fetch(GAS_URL, {
@@ -260,7 +282,6 @@
         renderSemuaSoal(hasil.soal);
         pulihkanJawaban(hasil.draftJawaban);
 
-        // Beri info jika jawaban sebelumnya berhasil dipulihkan
         if (hasil.draftJawaban && Object.keys(hasil.draftJawaban).length > 0) {
           Swal.fire({
             icon: 'info',
@@ -315,8 +336,8 @@
             return `
               <tr>
                 <td>${s[h]}</td>
-                <td class="tengah"><input type="radio" name="soal_${s.no}_item_${idx}" value="B" style="cursor:pointer;"></td>
-                <td class="tengah"><input type="radio" name="soal_${s.no}_item_${idx}" value="S" style="cursor:pointer;"></td>
+                <td class="tengah"><input type="radio" name="soal_${s.no}_item_${idx}" value="B"></td>
+                <td class="tengah"><input type="radio" name="soal_${s.no}_item_${idx}" value="S"></td>
               </tr>`;
           }).join('');
 
@@ -420,10 +441,14 @@
       sedangProsesLogout = true;
       ujianBerjalan = false;
 
+      if (timerBlur) {
+        clearTimeout(timerBlur);
+        timerBlur = null;
+      }
+
       const pelanggaranKe = jumlahPelanggaranSaatIni + 1;
       const jawabanSekarang = pelanggaranKe === 1 ? kumpulkanJawaban() : {};
 
-      // Langsung kembalikan tampilan ke halaman Login
       const idPelanggar = userAktif;
       kembaliKeHalamanLogin();
 
@@ -447,7 +472,6 @@
         });
       }
 
-      // Kirim laporan pelanggaran ke Google Apps Script
       await panggilGAS({
         aksi: "PELANGGARAN",
         userId: idPelanggar,
@@ -458,20 +482,38 @@
       sedangProsesLogout = false;
     }
 
+    // 1. Deteksi pindah tab, minimize, tekan Home/Recent Apps, atau Split Screen (PC & Android)
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden) tanganiPelanggaran("Berpindah tab atau me-minimize browser");
+      if (document.hidden && ujianBerjalan) {
+        tanganiPelanggaran("Berpindah tab, membuka aplikasi lain, atau layar terbagi");
+      }
     });
 
+    // 2. Deteksi kehilangan fokus jendela (Toleransi 1.5 detik untuk mencegah false positive di HP)
     window.addEventListener("blur", () => {
-      tanganiPelanggaran("Jendela browser kehilangan fokus");
+      if (!ujianBerjalan) return;
+      timerBlur = setTimeout(() => {
+        if (!document.hasFocus() && ujianBerjalan) {
+          tanganiPelanggaran("Jendela browser kehilangan fokus");
+        }
+      }, 1500);
     });
 
+    window.addEventListener("focus", () => {
+      if (timerBlur) {
+        clearTimeout(timerBlur);
+        timerBlur = null;
+      }
+    });
+
+    // 3. Deteksi keluar Fullscreen (Hanya menghukum di PC/Laptop; Android diabaikan karena tombol Back)
     document.addEventListener("fullscreenchange", () => {
-      if (!document.fullscreenElement && ujianBerjalan) {
+      if (!document.fullscreenElement && ujianBerjalan && !isMobile) {
         tanganiPelanggaran("Keluar dari mode Fullscreen");
       }
     });
 
+    // 4. Blokir tombol pintasan Inspect Element / Source Code di PC
     document.addEventListener("keydown", (e) => {
       if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I") || (e.ctrlKey && e.key === "u")) {
         e.preventDefault();
