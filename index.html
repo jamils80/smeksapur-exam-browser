@@ -116,7 +116,6 @@
     .btn-selesai { background: linear-gradient(135deg, #16a34a, #15803d); }
     .btn-selesai:hover { box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35); }
 
-    /* Badge Tipe Soal */
     .badge-tipe {
       display: inline-block;
       font-size: 11px;
@@ -130,7 +129,6 @@
     .badge-pgk { background: #fef3c7; color: #b45309; }
     .badge-bs { background: #f3e8ff; color: #7e22ce; }
 
-    /* Opsi PG & PGK */
     .opsi-label {
       display: flex;
       align-items: flex-start;
@@ -146,39 +144,17 @@
     .opsi-label:hover { background: #eff6ff; border-color: #93c5fd; }
     .opsi-label input { margin-top: 3px; width: auto; cursor: pointer; }
 
-    /* Tabel Pilihan Ganda Kompleks Benar-Salah */
     .tabel-bs {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
       font-size: 14px;
     }
-    .tabel-bs th, .tabel-bs td {
-      border: 1px solid #cbd5e1;
-      padding: 10px;
-    }
-    .tabel-bs th {
-      background: #f1f5f9;
-      color: #1e293b;
-      text-align: center;
-    }
-    .tabel-bs td.tengah {
-      text-align: center;
-      width: 85px;
-    }
+    .tabel-bs th, .tabel-bs td { border: 1px solid #cbd5e1; padding: 10px; }
+    .tabel-bs th { background: #f1f5f9; color: #1e293b; text-align: center; }
+    .tabel-bs td.tengah { text-align: center; width: 85px; }
 
-    #halaman-ujian, #layar-blokir { display: none; }
-    #layar-blokir {
-      position: fixed;
-      inset: 0;
-      background: rgba(185, 28, 28, 0.96);
-      backdrop-filter: blur(8px);
-      color: white;
-      text-align: center;
-      padding-top: 18%;
-      z-index: 9999;
-      animation: munculHalus 0.4s ease;
-    }
+    #halaman-ujian { display: none; }
   </style>
 </head>
 <body oncontextmenu="return false;">
@@ -223,20 +199,15 @@
     <button class="btn-selesai" onclick="konfirmasiKirim()">Selesai & Kirim Jawaban</button>
   </div>
 
-  <!-- 3. LAYAR BLOKIR PELANGGARAN -->
-  <div id="layar-blokir">
-    <h1>AKSES UJIAN DIHENTIKAN</h1>
-    <p id="pesan-blokir" style="font-size: 18px;"></p>
-  </div>
-
   <script>
     // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwMuxMhxJ8DVJoHpAiZb0t8zaViGe6k7smeqgO99toHj7S6Me17LW2djpd5qI1rBnh-Sw/exec";
     
     let userAktif = "";
     let daftarSoalGlobal = [];
+    let jumlahPelanggaranSaatIni = 0;
     let ujianBerjalan = false;
-    let kesempatan = 1;
+    let sedangProsesLogout = false;
 
     async function panggilGAS(payload) {
       const res = await fetch(GAS_URL, {
@@ -273,13 +244,31 @@
 
         userAktif = userId;
         daftarSoalGlobal = hasil.soal;
+        jumlahPelanggaranSaatIni = hasil.pelanggaran || 0;
         ujianBerjalan = true;
+        sedangProsesLogout = false;
+
         document.body.style.alignItems = "flex-start";
         document.getElementById("halaman-login").style.display = "none";
         document.getElementById("halaman-ujian").style.display = "block";
-        document.getElementById("info-peserta").innerText = `Peserta: ${hasil.nama} (ID: ${userId})`;
+        
+        const infoPeringatan = jumlahPelanggaranSaatIni > 0 
+          ? ` | <span style="color:#dc2626;">Catatan Pelanggaran: ${jumlahPelanggaranSaatIni}x</span>` 
+          : '';
+        document.getElementById("info-peserta").innerHTML = `Peserta: ${hasil.nama} (ID: ${userId})${infoPeringatan}`;
 
         renderSemuaSoal(hasil.soal);
+        pulihkanJawaban(hasil.draftJawaban);
+
+        // Beri info jika jawaban sebelumnya berhasil dipulihkan
+        if (hasil.draftJawaban && Object.keys(hasil.draftJawaban).length > 0) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Jawaban Sebelumnya Dipulihkan',
+            text: 'Jawaban Anda sebelum logout pelanggaran pertama telah dimuat kembali. Jangan tinggalkan halaman ujian lagi karena jawaban akan dihapus permanen!',
+            confirmButtonText: 'Lanjutkan Ujian'
+          });
+        }
 
       } catch (err) {
         Swal.fire({ icon: 'error', title: 'Kesalahan Koneksi', text: 'Gagal terhubung ke server ujian. Periksa koneksi internet Anda.' });
@@ -353,6 +342,34 @@
       }).join('');
     }
 
+    function pulihkanJawaban(draft) {
+      if (!draft) return;
+      daftarSoalGlobal.forEach(s => {
+        const nilai = draft[s.no];
+        if (!nilai) return;
+        const tipe = s.tipe || 'PG';
+
+        if (tipe === 'PG') {
+          const el = document.querySelector(`input[name="soal_${s.no}"][value="${nilai}"]`);
+          if (el) el.checked = true;
+        } 
+        else if (tipe === 'PGK') {
+          nilai.split(',').forEach(huruf => {
+            const el = document.querySelector(`input[name="soal_${s.no}"][value="${huruf}"]`);
+            if (el) el.checked = true;
+          });
+        } 
+        else if (tipe === 'BS') {
+          nilai.split(',').forEach((bs, idx) => {
+            if (bs === 'B' || bs === 'S') {
+              const el = document.querySelector(`input[name="soal_${s.no}_item_${idx}"][value="${bs}"]`);
+              if (el) el.checked = true;
+            }
+          });
+        }
+      });
+    }
+
     function kumpulkanJawaban() {
       const jawaban = {};
       const hurufOpsi = ['a', 'b', 'c', 'd', 'e'];
@@ -383,43 +400,78 @@
       return jawaban;
     }
 
-    function tanganiPelanggaran(alasan) {
-      if (!ujianBerjalan) return;
+    function kembaliKeHalamanLogin() {
+      ujianBerjalan = false;
+      userAktif = "";
+      daftarSoalGlobal = [];
+      document.getElementById("wadah-soal").innerHTML = "";
+      document.getElementById("password").value = "";
+      document.getElementById("halaman-ujian").style.display = "none";
+      document.getElementById("halaman-login").style.display = "block";
+      document.body.style.alignItems = "center";
 
-      if (kesempatan > 0) {
-        kesempatan--;
-        Swal.fire({
-          icon: 'warning',
-          title: 'PERINGATAN PELANGGARAN!',
-          html: `Anda terdeteksi: <b>${alasan}</b>.<br><br>Jangan meninggalkan layar ujian atau keluar dari mode Fullscreen. <b>Pelanggaran berikutnya akan otomatis mengunci akun Anda!</b>`,
-          confirmButtonText: 'Saya Mengerti & Kembali ke Ujian',
-          confirmButtonColor: '#d33',
-          allowOutsideClick: false
-        }).then(() => {
-          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {});
-          }
-        });
-      } else {
-        ujianBerjalan = false;
-        document.getElementById("halaman-ujian").style.display = "none";
-        document.getElementById("pesan-blokir").innerText = "Akun Anda telah dikunci secara otomatis. Alasan: " + alasan;
-        document.getElementById("layar-blokir").style.display = "block";
-        panggilGAS({ aksi: "AUTO_LOGOUT", userId: userAktif, keterangan: alasan });
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Sesi Ujian Dihentikan!',
-          text: 'Anda telah melampaui batas peringatan. Akun terkunci otomatis.',
-          confirmButtonColor: '#b71c1c',
-          allowOutsideClick: false
-        });
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
       }
     }
 
-    document.addEventListener("visibilitychange", () => { if (document.hidden) tanganiPelanggaran("Berpindah tab atau me-minimize browser"); });
-    window.addEventListener("blur", () => { tanganiPelanggaran("Jendela browser kehilangan fokus"); });
-    document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && ujianBerjalan) tanganiPelanggaran("Keluar dari mode Fullscreen"); });
+    async function tanganiPelanggaran(alasan) {
+      if (!ujianBerjalan || sedangProsesLogout) return;
+      sedangProsesLogout = true;
+      ujianBerjalan = false;
+
+      const pelanggaranKe = jumlahPelanggaranSaatIni + 1;
+      const jawabanSekarang = pelanggaranKe === 1 ? kumpulkanJawaban() : {};
+
+      // Langsung kembalikan tampilan ke halaman Login
+      const idPelanggar = userAktif;
+      kembaliKeHalamanLogin();
+
+      if (pelanggaranKe === 1) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'PERINGATAN PELANGGARAN KE-1!',
+          html: `Anda terdeteksi: <b>${alasan}</b>.<br><br>Sesi Anda telah dikeluarkan otomatis, namun <b>jawaban Anda MASIH TERSIMPAN</b>.<br>Silakan login kembali. <b>Jika melanggar ke-2 kalinya, seluruh jawaban Anda akan DIHAPUS!</b>`,
+          confirmButtonText: 'Mengerti',
+          confirmButtonColor: '#d97706',
+          allowOutsideClick: false
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'PELANGGARAN KE-' + pelanggaranKe + '!',
+          html: `Anda kembali terdeteksi: <b>${alasan}</b>.<br><br>Sesi Anda dikeluarkan otomatis dan <b>SELURUH JAWABAN ANDA TELAH DIHAPUS!</b>`,
+          confirmButtonText: 'Tutup',
+          confirmButtonColor: '#dc2626',
+          allowOutsideClick: false
+        });
+      }
+
+      // Kirim laporan pelanggaran ke Google Apps Script
+      await panggilGAS({
+        aksi: "PELANGGARAN",
+        userId: idPelanggar,
+        keterangan: alasan,
+        jawaban: jawabanSekarang
+      }).catch(() => {});
+
+      sedangProsesLogout = false;
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) tanganiPelanggaran("Berpindah tab atau me-minimize browser");
+    });
+
+    window.addEventListener("blur", () => {
+      tanganiPelanggaran("Jendela browser kehilangan fokus");
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement && ujianBerjalan) {
+        tanganiPelanggaran("Keluar dari mode Fullscreen");
+      }
+    });
+
     document.addEventListener("keydown", (e) => {
       if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I") || (e.ctrlKey && e.key === "u")) {
         e.preventDefault();
