@@ -2,79 +2,145 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Portal Ujian Online</title>
+  <title>Ujian Online Terpantau</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
+    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; user-select: none; }
+    .box { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+    input, button { padding: 10px; margin: 8px 0; width: 100%; box-sizing: border-box; }
+    button { background: #1976d2; color: white; border: none; cursor: pointer; font-weight: bold; }
+    #halaman-ujian, #layar-blokir { display: none; }
     #layar-blokir {
-      display: none; position: fixed; inset: 0; background: #b71c1c;
-      color: white; text-align: center; padding-top: 20%; z-index: 9999;
+      position: fixed; inset: 0; background: #b71c1c; color: white;
+      text-align: center; padding-top: 20%; z-index: 9999;
     }
   </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-  <div id="area-ujian">
-    <h2>Ujian Sedang Berlangsung</h2>
-    <p>Sistem memantau fokus layar Anda secara otomatis.</p>
-    <!-- Area soal ujian -->
+  <!-- 1. FORM LOGIN -->
+  <div id="halaman-login" class="box">
+    <h2>Login Peserta Ujian</h2>
+    <input type="text" id="userId" placeholder="Masukkan User ID (contoh: P001)">
+    <input type="password" id="password" placeholder="Masukkan Password">
+    <button onclick="mulaiLogin()">Masuk & Mulai Ujian (Fullscreen)</button>
+    <p id="status-login" style="color:red;"></p>
   </div>
 
+  <!-- 2. HALAMAN UJIAN -->
+  <div id="halaman-ujian" class="box">
+    <h3 id="info-peserta"></h3>
+    <div id="wadah-soal"></div>
+    <button onclick="kirimJawaban()">Selesai & Kirim Jawaban</button>
+  </div>
+
+  <!-- 3. LAYAR BLOKIR PELANGGARAN -->
   <div id="layar-blokir">
-    <h1>AKSES UJIAN DITUTUP</h1>
-    <p id="detail-pelanggaran"></p>
+    <h1>AKSES UJIAN DIHENTIKAN</h1>
+    <p id="pesan-blokir"></p>
   </div>
 
   <script>
-    // Ganti dengan URL Web App hasil deploy Google Apps Script Anda
-    const GAS_API_URL = "https://script.google.com/macros/s/MASUKKAN_ID_DEPLOY_ANDA/exec";
-    const USER_ID = "PESERTA_001";
-    
-    let peringatan = 1;
-    let sudahLogout = false;
+    const GAS_URL = "TEMPEL_URL_WEB_APP_GAS_ANDA_DI_SINI";
+    let userAktif = "";
+    let ujianBerjalan = false;
+    let kesempatan = 1;
 
-    // Fungsi mengirim laporan ke Google Apps Script
-    function kirimKeGAS(aksi, keterangan) {
-      fetch(GAS_API_URL, {
+    async function panggilGAS(payload) {
+      const res = await fetch(GAS_URL, {
         method: "POST",
-        // Menggunakan text/plain agar terhindar dari blokir CORS preflight browser
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          userId: USER_ID,
-          aksi: aksi,
-          keterangan: keterangan
-        })
-      }).catch(err => console.error("Gagal kirim log:", err));
+        body: JSON.stringify(payload)
+      });
+      return res.json();
     }
 
-    function prosesPelanggaran(alasan) {
-      if (sudahLogout) return;
+    async function mulaiLogin() {
+      const userId = document.getElementById("userId").value.trim();
+      const password = document.getElementById("password").value.trim();
+      document.getElementById("status-login").innerText = "Memverifikasi...";
 
-      if (peringatan > 0) {
-        peringatan--;
-        kirimKeGAS("PERINGATAN", alasan);
-        alert("PERINGATAN! Jangan meninggalkan layar ujian. Pelanggaran berikutnya akan otomatis logout.");
+      const hasil = await panggilGAS({ aksi: "LOGIN", userId, password });
+      if (hasil.status !== "success") {
+        document.getElementById("status-login").innerText = hasil.pesan;
+        return;
+      }
+
+      // Aktifkan Fullscreen saat ujian dimulai
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen().catch(() => {});
+      }
+
+      userAktif = userId;
+      ujianBerjalan = true;
+      document.getElementById("halaman-login").style.display = "none";
+      document.getElementById("halaman-ujian").style.display = "block";
+      document.getElementById("info-peserta").innerText = `Peserta: ${hasil.nama} (${userId})`;
+
+      // Render Soal
+      const wadah = document.getElementById("wadah-soal");
+      wadah.innerHTML = hasil.soal.map(s => `
+        <div style="margin-bottom:20px;">
+          <p><b>${s.no}. ${s.tanya}</b></p>
+          <label><input type="radio" name="soal_${s.no}" value="A" style="width:auto;"> A. ${s.a}</label><br>
+          <label><input type="radio" name="soal_${s.no}" value="B" style="width:auto;"> B. ${s.b}</label><br>
+          <label><input type="radio" name="soal_${s.no}" value="C" style="width:auto;"> C. ${s.c}</label><br>
+          <label><input type="radio" name="soal_${s.no}" value="D" style="width:auto;"> D. ${s.d}</label>
+        </div>
+      `).join("");
+    }
+
+    function tanganiPelanggaran(alasan) {
+      if (!ujianBerjalan) return;
+
+      if (kesempatan > 0) {
+        kesempatan--;
+        alert("PERINGATAN! Jangan berpindah tab, keluar fullscreen, atau membuka aplikasi lain. Pelanggaran berikutnya otomatis LOGOUT.");
       } else {
-        sudahLogout = true;
-        sessionStorage.clear();
-        localStorage.clear();
-
-        document.getElementById("area-ujian").style.display = "none";
-        document.getElementById("detail-pelanggaran").innerText = "Alasan: " + alasan;
+        ujianBerjalan = false;
+        document.getElementById("halaman-ujian").style.display = "none";
+        document.getElementById("pesan-blokir").innerText = "Akun dikunci. Alasan: " + alasan;
         document.getElementById("layar-blokir").style.display = "block";
-
-        kirimKeGAS("AUTO_LOGOUT", alasan);
+        panggilGAS({ aksi: "AUTO_LOGOUT", userId: userAktif, keterangan: alasan });
       }
     }
 
-    // Pantau pindah tab / minimize
+    // 1. Deteksi pindah tab / minimize
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden) prosesPelanggaran("Pindah tab atau minimize browser");
+      if (document.hidden) tanganiPelanggaran("Pindah tab atau minimize browser");
     });
 
-    // Pantau kehilangan fokus jendela (buka aplikasi lain / split screen)
+    // 2. Deteksi klik aplikasi lain
     window.addEventListener("blur", () => {
-      prosesPelanggaran("Klik di luar jendela ujian");
+      tanganiPelanggaran("Jendela browser kehilangan fokus");
     });
+
+    // 3. Deteksi keluar dari mode Fullscreen (tekan ESC)
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement && ujianBerjalan) {
+        tanganiPelanggaran("Keluar dari mode Fullscreen");
+      }
+    });
+
+    // 4. Blokir tombol pintasan Inspect Element / Copy
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I") || (e.ctrlKey && e.key === "u")) {
+        e.preventDefault();
+        tanganiPelanggaran("Mencoba membuka Inspect Element / Source Code");
+      }
+    });
+
+    async function kirimJawaban() {
+      ujianBerjalan = false;
+      const jawaban = {};
+      document.querySelectorAll("input[type=radio]:checked").forEach(el => {
+        const no = el.name.replace("soal_", "");
+        jawaban[no] = el.value;
+      });
+
+      const hasil = await panggilGAS({ aksi: "SUBMIT", userId: userAktif, jawaban });
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      document.getElementById("halaman-ujian").innerHTML = `<h2>Ujian Selesai!</h2><p>Skor Anda: <b>${hasil.skor}</b></p>`;
+    }
   </script>
 </body>
 </html>
