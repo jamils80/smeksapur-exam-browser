@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Ujian Online - SMK Negeri 1 Purwoasri</title>
-  <!-- Library SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     * { box-sizing: border-box; }
@@ -21,7 +20,6 @@
       background-color: #0f172a;
     }
 
-    /* Layer Background Gambar dari Google Drive dengan Animasi Dinamis */
     .bg-animated {
       position: fixed;
       inset: -5%;
@@ -34,7 +32,6 @@
       animation: kenBurnsDinamis 25s ease-in-out infinite alternate;
     }
 
-    /* Lapisan Gelap Transparan */
     .bg-overlay {
       position: fixed;
       inset: 0;
@@ -54,11 +51,10 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Desain Kartu Utama (Glassmorphism) */
     .box {
       width: 100%;
-      max-width: 740px;
-      background: rgba(255, 255, 255, 0.95);
+      max-width: 780px;
+      background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.4);
       padding: 30px;
@@ -67,11 +63,8 @@
       animation: munculHalus 0.7s ease-out;
     }
 
-    #halaman-login {
-      max-width: 480px;
-    }
+    #halaman-login { max-width: 480px; }
 
-    /* Styling Kop / Header Sekolah */
     .kop-header {
       display: flex;
       align-items: center;
@@ -83,38 +76,13 @@
       text-align: left;
     }
 
-    .kop-logo {
-      width: 68px;
-      height: auto;
-      object-fit: contain;
-      flex-shrink: 0;
-    }
+    .kop-logo { width: 68px; height: auto; object-fit: contain; flex-shrink: 0; }
+    .kop-teks { line-height: 1.3; color: #0f172a; }
+    .kop-teks .baris-1 { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+    .kop-teks .baris-2 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; }
+    .kop-teks .baris-3 { font-size: 17px; font-weight: 800; color: #1e3a8a; margin-top: 2px; }
 
-    .kop-teks {
-      line-height: 1.3;
-      color: #0f172a;
-    }
-
-    .kop-teks .baris-1 {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-
-    .kop-teks .baris-2 {
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    .kop-teks .baris-3 {
-      font-size: 17px;
-      font-weight: 800;
-      color: #1e3a8a;
-      margin-top: 2px;
-    }
-
-    input {
+    input[type="text"], input[type="password"] {
       padding: 13px 15px;
       margin: 8px 0;
       width: 100%;
@@ -124,7 +92,7 @@
       transition: all 0.3s ease;
     }
 
-    input:focus {
+    input[type="text"]:focus, input[type="password"]:focus {
       outline: none;
       border-color: #2563eb;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
@@ -141,29 +109,32 @@
       cursor: pointer;
       font-weight: bold;
       font-size: 15px;
-      letter-spacing: 0.3px;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
-    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35); }
+    .btn-selesai { background: linear-gradient(135deg, #16a34a, #15803d); }
+    .btn-selesai:hover { box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35); }
 
-    button:active {
-      transform: translateY(0);
+    /* Badge Tipe Soal */
+    .badge-tipe {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
     }
+    .badge-pg { background: #e0f2fe; color: #0369a1; }
+    .badge-pgk { background: #fef3c7; color: #b45309; }
+    .badge-bs { background: #f3e8ff; color: #7e22ce; }
 
-    .btn-selesai {
-      background: linear-gradient(135deg, #16a34a, #15803d);
-    }
-
-    .btn-selesai:hover {
-      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35);
-    }
-
+    /* Opsi PG & PGK */
     .opsi-label {
-      display: block;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
       padding: 10px 14px;
       margin: 6px 0;
       background: #f8fafc;
@@ -172,14 +143,31 @@
       cursor: pointer;
       transition: all 0.2s ease;
     }
+    .opsi-label:hover { background: #eff6ff; border-color: #93c5fd; }
+    .opsi-label input { margin-top: 3px; width: auto; cursor: pointer; }
 
-    .opsi-label:hover {
-      background: #eff6ff;
-      border-color: #93c5fd;
+    /* Tabel Pilihan Ganda Kompleks Benar-Salah */
+    .tabel-bs {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .tabel-bs th, .tabel-bs td {
+      border: 1px solid #cbd5e1;
+      padding: 10px;
+    }
+    .tabel-bs th {
+      background: #f1f5f9;
+      color: #1e293b;
+      text-align: center;
+    }
+    .tabel-bs td.tengah {
+      text-align: center;
+      width: 85px;
     }
 
     #halaman-ujian, #layar-blokir { display: none; }
-
     #layar-blokir {
       position: fixed;
       inset: 0;
@@ -195,13 +183,11 @@
 </head>
 <body oncontextmenu="return false;">
 
-  <!-- Elemen Background Dinamis -->
   <div class="bg-animated"></div>
   <div class="bg-overlay"></div>
 
   <!-- 1. FORM LOGIN -->
   <div id="halaman-login" class="box">
-    <!-- Kop Header -->
     <div class="kop-header">
       <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" alt="Logo SMK Negeri 1 Purwoasri" class="kop-logo">
       <div class="kop-teks">
@@ -223,7 +209,6 @@
 
   <!-- 2. HALAMAN UJIAN -->
   <div id="halaman-ujian" class="box" style="margin: 30px auto;">
-    <!-- Kop Header di Halaman Ujian -->
     <div class="kop-header">
       <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" alt="Logo SMK Negeri 1 Purwoasri" class="kop-logo">
       <div class="kop-teks">
@@ -249,6 +234,7 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwMuxMhxJ8DVJoHpAiZb0t8zaViGe6k7smeqgO99toHj7S6Me17LW2djpd5qI1rBnh-Sw/exec";
     
     let userAktif = "";
+    let daftarSoalGlobal = [];
     let ujianBerjalan = false;
     let kesempatan = 1;
 
@@ -266,30 +252,16 @@
       const password = document.getElementById("password").value.trim();
 
       if (!userId || !password) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Data Belum Lengkap',
-          text: 'Silakan isi User ID dan Password terlebih dahulu!'
-        });
+        Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Silakan isi User ID dan Password terlebih dahulu!' });
         return;
       }
 
-      Swal.fire({
-        title: 'Memverifikasi Akun...',
-        text: 'Mohon tunggu sebentar',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-      });
+      Swal.fire({ title: 'Memverifikasi Akun...', text: 'Mohon tunggu sebentar', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
       try {
         const hasil = await panggilGAS({ aksi: "LOGIN", userId, password });
-        
         if (hasil.status !== "success") {
-          Swal.fire({
-            icon: 'error',
-            title: 'Login Gagal',
-            text: hasil.pesan
-          });
+          Swal.fire({ icon: 'error', title: 'Login Gagal', text: hasil.pesan });
           return;
         }
 
@@ -300,30 +272,115 @@
         }
 
         userAktif = userId;
+        daftarSoalGlobal = hasil.soal;
         ujianBerjalan = true;
         document.body.style.alignItems = "flex-start";
         document.getElementById("halaman-login").style.display = "none";
         document.getElementById("halaman-ujian").style.display = "block";
         document.getElementById("info-peserta").innerText = `Peserta: ${hasil.nama} (ID: ${userId})`;
 
-        const wadah = document.getElementById("wadah-soal");
-        wadah.innerHTML = hasil.soal.map(s => `
-          <div style="margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid #e2e8f0;">
-            <p style="font-size:16px; color:#0f172a;"><b>${s.no}. ${s.tanya}</b></p>
-            <label class="opsi-label"><input type="radio" name="soal_${s.no}" value="A" style="width:auto; margin-right:8px;"> A. ${s.a}</label>
-            <label class="opsi-label"><input type="radio" name="soal_${s.no}" value="B" style="width:auto; margin-right:8px;"> B. ${s.b}</label>
-            <label class="opsi-label"><input type="radio" name="soal_${s.no}" value="C" style="width:auto; margin-right:8px;"> C. ${s.c}</label>
-            <label class="opsi-label"><input type="radio" name="soal_${s.no}" value="D" style="width:auto; margin-right:8px;"> D. ${s.d}</label>
-          </div>
-        `).join("");
+        renderSemuaSoal(hasil.soal);
 
       } catch (err) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Kesalahan Koneksi',
-          text: 'Gagal terhubung ke server ujian. Periksa koneksi internet Anda.'
-        });
+        Swal.fire({ icon: 'error', title: 'Kesalahan Koneksi', text: 'Gagal terhubung ke server ujian. Periksa koneksi internet Anda.' });
       }
+    }
+
+    function renderSemuaSoal(soalList) {
+      const wadah = document.getElementById("wadah-soal");
+      const hurufOpsi = ['a', 'b', 'c', 'd', 'e'];
+
+      wadah.innerHTML = soalList.map(s => {
+        const tipe = s.tipe || 'PG';
+        let kontenOpsi = '';
+        let badgeHTML = '';
+
+        if (tipe === 'PG') {
+          badgeHTML = `<span class="badge-tipe badge-pg">Pilihan Ganda (Pilih 1 Jawaban)</span>`;
+          kontenOpsi = hurufOpsi.map(h => {
+            if (!s[h]) return '';
+            const H = h.toUpperCase();
+            return `
+              <label class="opsi-label">
+                <input type="radio" name="soal_${s.no}" value="${H}">
+                <span><b>${H}.</b> ${s[h]}</span>
+              </label>`;
+          }).join('');
+        } 
+        else if (tipe === 'PGK') {
+          badgeHTML = `<span class="badge-tipe badge-pgk">Pilihan Ganda Kompleks (Bisa Pilih Lebih Dari 1)</span>`;
+          kontenOpsi = hurufOpsi.map(h => {
+            if (!s[h]) return '';
+            const H = h.toUpperCase();
+            return `
+              <label class="opsi-label">
+                <input type="checkbox" name="soal_${s.no}" value="${H}">
+                <span><b>${H}.</b> ${s[h]}</span>
+              </label>`;
+          }).join('');
+        } 
+        else if (tipe === 'BS') {
+          badgeHTML = `<span class="badge-tipe badge-bs">Pilihan Ganda Kompleks (Benar / Salah)</span>`;
+          const barisPernyataan = hurufOpsi.map((h, idx) => {
+            if (!s[h]) return '';
+            return `
+              <tr>
+                <td>${s[h]}</td>
+                <td class="tengah"><input type="radio" name="soal_${s.no}_item_${idx}" value="B" style="cursor:pointer;"></td>
+                <td class="tengah"><input type="radio" name="soal_${s.no}_item_${idx}" value="S" style="cursor:pointer;"></td>
+              </tr>`;
+          }).join('');
+
+          kontenOpsi = `
+            <table class="tabel-bs">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Pernyataan</th>
+                  <th>Benar</th>
+                  <th>Salah</th>
+                </tr>
+              </thead>
+              <tbody>${barisPernyataan}</tbody>
+            </table>`;
+        }
+
+        return `
+          <div style="margin-bottom:26px; padding-bottom:20px; border-bottom:1px solid #e2e8f0;">
+            ${badgeHTML}
+            <p style="font-size:16px; color:#0f172a; margin-top:4px;"><b>${s.no}. ${s.tanya}</b></p>
+            ${kontenOpsi}
+          </div>`;
+      }).join('');
+    }
+
+    function kumpulkanJawaban() {
+      const jawaban = {};
+      const hurufOpsi = ['a', 'b', 'c', 'd', 'e'];
+
+      daftarSoalGlobal.forEach(s => {
+        const tipe = s.tipe || 'PG';
+
+        if (tipe === 'PG') {
+          const terpilih = document.querySelector(`input[name="soal_${s.no}"]:checked`);
+          jawaban[s.no] = terpilih ? terpilih.value : "";
+        } 
+        else if (tipe === 'PGK') {
+          const terpilih = Array.from(document.querySelectorAll(`input[name="soal_${s.no}"]:checked`)).map(el => el.value);
+          jawaban[s.no] = terpilih.join(',');
+        } 
+        else if (tipe === 'BS') {
+          const hasilBS = [];
+          hurufOpsi.forEach((h, idx) => {
+            if (s[h]) {
+              const terpilih = document.querySelector(`input[name="soal_${s.no}_item_${idx}"]:checked`);
+              hasilBS.push(terpilih ? terpilih.value : "-");
+            }
+          });
+          jawaban[s.no] = hasilBS.join(',');
+        }
+      });
+
+      return jawaban;
     }
 
     function tanganiPelanggaran(alasan) {
@@ -348,7 +405,6 @@
         document.getElementById("halaman-ujian").style.display = "none";
         document.getElementById("pesan-blokir").innerText = "Akun Anda telah dikunci secara otomatis. Alasan: " + alasan;
         document.getElementById("layar-blokir").style.display = "block";
-        
         panggilGAS({ aksi: "AUTO_LOGOUT", userId: userAktif, keterangan: alasan });
 
         Swal.fire({
@@ -361,20 +417,9 @@
       }
     }
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) tanganiPelanggaran("Berpindah tab atau me-minimize browser");
-    });
-
-    window.addEventListener("blur", () => {
-      tanganiPelanggaran("Jendela browser kehilangan fokus");
-    });
-
-    document.addEventListener("fullscreenchange", () => {
-      if (!document.fullscreenElement && ujianBerjalan) {
-        tanganiPelanggaran("Keluar dari mode Fullscreen");
-      }
-    });
-
+    document.addEventListener("visibilitychange", () => { if (document.hidden) tanganiPelanggaran("Berpindah tab atau me-minimize browser"); });
+    window.addEventListener("blur", () => { tanganiPelanggaran("Jendela browser kehilangan fokus"); });
+    document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && ujianBerjalan) tanganiPelanggaran("Keluar dari mode Fullscreen"); });
     document.addEventListener("keydown", (e) => {
       if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I") || (e.ctrlKey && e.key === "u")) {
         e.preventDefault();
@@ -393,27 +438,15 @@
         confirmButtonText: 'Ya, Kirim Jawaban!',
         cancelButtonText: 'Batal'
       }).then((result) => {
-        if (result.isConfirmed) {
-          prosesKirimJawaban();
-        }
+        if (result.isConfirmed) prosesKirimJawaban();
       });
     }
 
     async function prosesKirimJawaban() {
       ujianBerjalan = false;
-      
-      Swal.fire({
-        title: 'Menyimpan & Mengoreksi Jawaban...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-      });
+      Swal.fire({ title: 'Menyimpan & Mengoreksi Jawaban...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
-      const jawaban = {};
-      document.querySelectorAll("input[type=radio]:checked").forEach(el => {
-        const no = el.name.replace("soal_", "");
-        jawaban[no] = el.value;
-      });
-
+      const jawaban = kumpulkanJawaban();
       const hasil = await panggilGAS({ aksi: "SUBMIT", userId: userAktif, jawaban });
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
