@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Ujian Online Terpantau</title>
+  <!-- Library SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; user-select: none; }
-    .box { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
-    input, button { padding: 10px; margin: 8px 0; width: 100%; box-sizing: border-box; }
-    button { background: #1976d2; color: white; border: none; cursor: pointer; font-weight: bold; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; user-select: none; background: #f4f6f9; }
+    .box { background: white; border: 1px solid #ddd; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    input, button { padding: 12px; margin: 8px 0; width: 100%; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; }
+    button { background: #1976d2; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 15px; }
+    button:hover { background: #1565c0; }
     #halaman-ujian, #layar-blokir { display: none; }
     #layar-blokir {
       position: fixed; inset: 0; background: #b71c1c; color: white;
-      text-align: center; padding-top: 20%; z-index: 9999;
+      text-align: center; padding-top: 18%; z-index: 9999;
     }
   </style>
 </head>
@@ -19,28 +22,29 @@
 
   <!-- 1. FORM LOGIN -->
   <div id="halaman-login" class="box">
-    <h2>Login Peserta Ujian</h2>
-    <input type="text" id="userId" placeholder="Masukkan User ID (contoh: P001)">
+    <h2 style="margin-top:0;">Login Peserta Ujian</h2>
+    <input type="text" id="userId" placeholder="Masukkan User ID">
     <input type="password" id="password" placeholder="Masukkan Password">
     <button onclick="mulaiLogin()">Masuk & Mulai Ujian (Fullscreen)</button>
-    <p id="status-login" style="color:red;"></p>
   </div>
 
   <!-- 2. HALAMAN UJIAN -->
   <div id="halaman-ujian" class="box">
-    <h3 id="info-peserta"></h3>
+    <h3 id="info-peserta" style="border-bottom: 2px solid #eee; padding-bottom: 10px;"></h3>
     <div id="wadah-soal"></div>
-    <button onclick="kirimJawaban()">Selesai & Kirim Jawaban</button>
+    <button onclick="konfirmasiKirim()" style="background: #2e7d32;">Selesai & Kirim Jawaban</button>
   </div>
 
   <!-- 3. LAYAR BLOKIR PELANGGARAN -->
   <div id="layar-blokir">
     <h1>AKSES UJIAN DIHENTIKAN</h1>
-    <p id="pesan-blokir"></p>
+    <p id="pesan-blokir" style="font-size: 18px;"></p>
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwMuxMhxJ8DVJoHpAiZb0t8zaViGe6k7smeqgO99toHj7S6Me17LW2djpd5qI1rBnh-Sw/exec";
+    // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+    const GAS_URL = "TEMPEL_URL_WEB_APP_GAS_ANDA_DI_SINI";
+    
     let userAktif = "";
     let ujianBerjalan = false;
     let kesempatan = 1;
@@ -57,36 +61,68 @@
     async function mulaiLogin() {
       const userId = document.getElementById("userId").value.trim();
       const password = document.getElementById("password").value.trim();
-      document.getElementById("status-login").innerText = "Memverifikasi...";
 
-      const hasil = await panggilGAS({ aksi: "LOGIN", userId, password });
-      if (hasil.status !== "success") {
-        document.getElementById("status-login").innerText = hasil.pesan;
+      if (!userId || !password) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Data Belum Lengkap',
+          text: 'Silakan isi User ID dan Password terlebih dahulu!'
+        });
         return;
       }
 
-      // Aktifkan Fullscreen saat ujian dimulai
-      if (document.documentElement.requestFullscreen) {
-        await document.documentElement.requestFullscreen().catch(() => {});
+      // Tampilkan loading SweetAlert
+      Swal.fire({
+        title: 'Memverifikasi Akun...',
+        text: 'Mohon tunggu sebentar',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      try {
+        const hasil = await panggilGAS({ aksi: "LOGIN", userId, password });
+        
+        if (hasil.status !== "success") {
+          Swal.fire({
+            icon: 'error',
+            title: 'Login Gagal',
+            text: hasil.pesan
+          });
+          return;
+        }
+
+        Swal.close();
+
+        // Aktifkan Fullscreen saat ujian dimulai
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen().catch(() => {});
+        }
+
+        userAktif = userId;
+        ujianBerjalan = true;
+        document.getElementById("halaman-login").style.display = "none";
+        document.getElementById("halaman-ujian").style.display = "block";
+        document.getElementById("info-peserta").innerText = `Peserta: ${hasil.nama} (${userId})`;
+
+        // Render Soal
+        const wadah = document.getElementById("wadah-soal");
+        wadah.innerHTML = hasil.soal.map(s => `
+          <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #f0f0f0;">
+            <p><b>${s.no}. ${s.tanya}</b></p>
+            <label style="display:block; margin:5px 0;"><input type="radio" name="soal_${s.no}" value="A" style="width:auto;"> A. ${s.a}</label>
+            <label style="display:block; margin:5px 0;"><input type="radio" name="soal_${s.no}" value="B" style="width:auto;"> B. ${s.b}</label>
+            <label style="display:block; margin:5px 0;"><input type="radio" name="soal_${s.no}" value="C" style="width:auto;"> C. ${s.c}</label>
+            <label style="display:block; margin:5px 0;"><input type="radio" name="soal_${s.no}" value="D" style="width:auto;"> D. ${s.d}</label>
+          </div>
+        `).join("");
+
+      } catch (err) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Kesalahan Koneksi',
+          text: 'Gagal terhubung ke server ujian. Periksa koneksi internet Anda.'
+        });
       }
-
-      userAktif = userId;
-      ujianBerjalan = true;
-      document.getElementById("halaman-login").style.display = "none";
-      document.getElementById("halaman-ujian").style.display = "block";
-      document.getElementById("info-peserta").innerText = `Peserta: ${hasil.nama} (${userId})`;
-
-      // Render Soal
-      const wadah = document.getElementById("wadah-soal");
-      wadah.innerHTML = hasil.soal.map(s => `
-        <div style="margin-bottom:20px;">
-          <p><b>${s.no}. ${s.tanya}</b></p>
-          <label><input type="radio" name="soal_${s.no}" value="A" style="width:auto;"> A. ${s.a}</label><br>
-          <label><input type="radio" name="soal_${s.no}" value="B" style="width:auto;"> B. ${s.b}</label><br>
-          <label><input type="radio" name="soal_${s.no}" value="C" style="width:auto;"> C. ${s.c}</label><br>
-          <label><input type="radio" name="soal_${s.no}" value="D" style="width:auto;"> D. ${s.d}</label>
-        </div>
-      `).join("");
     }
 
     function tanganiPelanggaran(alasan) {
@@ -94,19 +130,40 @@
 
       if (kesempatan > 0) {
         kesempatan--;
-        alert("PERINGATAN! Jangan berpindah tab, keluar fullscreen, atau membuka aplikasi lain. Pelanggaran berikutnya otomatis LOGOUT.");
+        Swal.fire({
+          icon: 'warning',
+          title: 'PERINGATAN PELANGGARAN!',
+          html: `Anda terdeteksi: <b>${alasan}</b>.<br><br>Jangan meninggalkan layar ujian atau keluar dari mode Fullscreen. <b>Pelanggaran berikutnya akan otomatis mengunci akun Anda!</b>`,
+          confirmButtonText: 'Saya Mengerti & Kembali ke Ujian',
+          confirmButtonColor: '#d33',
+          allowOutsideClick: false
+        }).then(() => {
+          // Kembalikan ke mode fullscreen jika sempat keluar
+          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          }
+        });
       } else {
         ujianBerjalan = false;
         document.getElementById("halaman-ujian").style.display = "none";
-        document.getElementById("pesan-blokir").innerText = "Akun dikunci. Alasan: " + alasan;
+        document.getElementById("pesan-blokir").innerText = "Akun Anda telah dikunci secara otomatis. Alasan: " + alasan;
         document.getElementById("layar-blokir").style.display = "block";
+        
         panggilGAS({ aksi: "AUTO_LOGOUT", userId: userAktif, keterangan: alasan });
+
+        Swal.fire({
+          icon: 'error',
+          title: 'Sesi Ujian Dihentikan!',
+          text: 'Anda telah melampaui batas peringatan. Akun terkunci otomatis.',
+          confirmButtonColor: '#b71c1c',
+          allowOutsideClick: false
+        });
       }
     }
 
     // 1. Deteksi pindah tab / minimize
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden) tanganiPelanggaran("Pindah tab atau minimize browser");
+      if (document.hidden) tanganiPelanggaran("Berpindah tab atau me-minimize browser");
     });
 
     // 2. Deteksi klik aplikasi lain
@@ -129,8 +186,32 @@
       }
     });
 
-    async function kirimJawaban() {
+    function konfirmasiKirim() {
+      Swal.fire({
+        title: 'Kirim Jawaban Sekarang?',
+        text: 'Pastikan semua soal sudah terisi. Anda tidak dapat mengubah jawaban setelah dikirim.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#2e7d32',
+        cancelButtonColor: '#757575',
+        confirmButtonText: 'Ya, Kirim Jawaban!',
+        cancelButtonText: 'Batal'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          prosesKirimJawaban();
+        }
+      });
+    }
+
+    async function prosesKirimJawaban() {
       ujianBerjalan = false;
+      
+      Swal.fire({
+        title: 'Menyimpan & Mengoreksi Jawaban...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
       const jawaban = {};
       document.querySelectorAll("input[type=radio]:checked").forEach(el => {
         const no = el.name.replace("soal_", "");
@@ -139,7 +220,21 @@
 
       const hasil = await panggilGAS({ aksi: "SUBMIT", userId: userAktif, jawaban });
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-      document.getElementById("halaman-ujian").innerHTML = `<h2>Ujian Selesai!</h2><p>Skor Anda: <b>${hasil.skor}</b></p>`;
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Ujian Selesai!',
+        html: `Jawaban Anda berhasil direkam.<br>Skor Akhir Anda: <b style="font-size:24px; color:#2e7d32;">${hasil.skor}</b>`,
+        confirmButtonText: 'Tutup'
+      });
+
+      document.getElementById("halaman-ujian").innerHTML = `
+        <div style="text-align:center; padding: 20px;">
+          <h2>Ujian Telah Selesai</h2>
+          <p>Terima kasih telah mengikuti ujian dengan jujur.</p>
+          <p style="font-size: 20px;">Skor Akhir Anda: <b>${hasil.skor}</b></p>
+        </div>
+      `;
     }
   </script>
 </body>
