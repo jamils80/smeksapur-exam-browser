@@ -57,7 +57,7 @@
     /* Kartu Utama */
     .box {
       width: 100%;
-      max-width: 800px;
+      max-width: 820px;
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.4);
@@ -133,11 +133,7 @@
       margin-bottom: 16px;
     }
 
-    .info-teks {
-      font-weight: bold;
-      color: #1e3a8a;
-      font-size: 14px;
-    }
+    .info-teks { font-weight: bold; color: #1e3a8a; font-size: 14px; }
 
     .btn-toggle-nav {
       background: #1e3a8a;
@@ -150,7 +146,6 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-
     .btn-toggle-nav:hover { background: #1d4ed8; }
 
     /* Panel Navigasi Nomor Soal (Show/Hide) */
@@ -193,22 +188,18 @@
       cursor: pointer;
       transition: all 0.15s;
     }
-
     .btn-nomor:hover { border-color: #2563eb; }
     .btn-nomor.terjawab { background: #16a34a; color: white; border-color: #15803d; }
     .btn-nomor.aktif { background: #2563eb; color: white; border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25); }
 
     /* Area Soal Tunggal */
-    .kartu-soal-tunggal {
-      min-height: 260px;
-      padding: 10px 4px;
-    }
+    .kartu-soal-tunggal { min-height: 260px; padding: 10px 4px; }
 
     .header-nomor-soal {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
       gap: 8px;
     }
@@ -234,6 +225,40 @@
     .badge-pgk { background: #fef3c7; color: #b45309; }
     .badge-bs { background: #f3e8ff; color: #7e22ce; }
 
+    /* Styling Media (Gambar, Audio, Video) di Soal & Opsi */
+    .media-wrapper {
+      display: block;
+      margin: 10px 0;
+    }
+    .media-img {
+      max-width: 100%;
+      max-height: 320px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      display: block;
+      margin-top: 6px;
+    }
+    .opsi-label .media-img {
+      max-height: 160px; /* Ukuran gambar lebih proporsional jika di dalam pilihan jawaban */
+    }
+    .media-audio {
+      width: 100%;
+      max-width: 420px;
+      height: 40px;
+      margin-top: 6px;
+      display: block;
+    }
+    .media-video {
+      width: 100%;
+      max-width: 540px;
+      max-height: 320px;
+      border-radius: 8px;
+      background: #000;
+      margin-top: 6px;
+      display: block;
+    }
+
     /* Opsi Jawaban PG & PGK */
     .opsi-label {
       display: flex;
@@ -248,7 +273,8 @@
       transition: all 0.2s ease;
     }
     .opsi-label:hover { background: #eff6ff; border-color: #93c5fd; }
-    .opsi-label input { margin-top: 3px; width: auto; cursor: pointer; transform: scale(1.15); }
+    .opsi-label input { margin-top: 4px; width: auto; cursor: pointer; transform: scale(1.15); flex-shrink: 0; }
+    .opsi-konten { flex: 1; line-height: 1.45; }
 
     /* Tabel Pilihan Ganda Kompleks Benar-Salah */
     .tabel-bs {
@@ -262,7 +288,7 @@
     .tabel-bs td.tengah { text-align: center; width: 75px; }
     .tabel-bs input[type="radio"] { transform: scale(1.2); cursor: pointer; }
 
-    /* Tombol Navigasi Bawah (Sebelumnya / Berikutnya / Selesai) */
+    /* Tombol Navigasi Bawah */
     .navigasi-bawah {
       display: flex;
       justify-content: space-between;
@@ -343,7 +369,6 @@
       </div>
     </div>
 
-    <!-- Info Peserta & Tombol Show/Hide Navigasi -->
     <div class="baris-atas-ujian">
       <div id="info-peserta" class="info-teks"></div>
       <button type="button" class="btn-toggle-nav" onclick="toggleNavigasi()" id="btn-toggle-nav">
@@ -351,7 +376,6 @@
       </button>
     </div>
 
-    <!-- Panel Navigasi Nomor Soal (Show/Hide) -->
     <div id="panel-navigasi">
       <div class="legenda-nav">
         <span class="legenda-item"><span class="kotak-legenda" style="background:#2563eb;"></span> Sedang Dibuka</span>
@@ -361,10 +385,8 @@
       <div id="grid-nomor" class="grid-nomor"></div>
     </div>
 
-    <!-- Wadah Soal Aktif (1 Soal per Layar) -->
     <div id="wadah-soal" class="kartu-soal-tunggal"></div>
 
-    <!-- Tombol Sebelumnya / Berikutnya / Selesai -->
     <div class="navigasi-bawah">
       <button type="button" class="btn-nav btn-prev" id="btn-sebelumnya" onclick="pindahSoal(-1)">
         ← Sebelumnya
@@ -384,14 +406,55 @@
     
     let userAktif = "";
     let daftarSoalGlobal = [];
-    let jawabanTersimpan = {}; // Menyimpan seluruh jawaban peserta secara real-time
-    let indexSoalAktif = 0;    // Indeks soal yang sedang ditampilkan (mulai dari 0)
+    let jawabanTersimpan = {};
+    let indexSoalAktif = 0;
     let jumlahPelanggaranSaatIni = 0;
     let ujianBerjalan = false;
     let sedangProsesLogout = false;
     let timerBlur = null;
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // FUNGSI PARSER MEDIA: Mengubah [IMG:url], [AUDIO:url], [VIDEO:url] menjadi elemen HTML
+    function formatKontenMedia(teksRaw) {
+      if (!teksRaw) return "";
+      let hasil = String(teksRaw);
+
+      // Helper konversi link Google Drive ke direct link
+      const ekstrakDirectUrl = (url, jenis) => {
+        const matchDrive = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (matchDrive && matchDrive[1]) {
+          const fileId = matchDrive[1];
+          if (jenis === 'IMG') {
+            return `https://lh3.googleusercontent.com/d/${fileId}`;
+          } else {
+            return `https://drive.google.com/uc?export=download&id=${fileId}`;
+          }
+        }
+        return url;
+      };
+
+      // 1. Ganti [IMG:...]
+      hasil = hasil.replace(/\[IMG:(.*?)\]/gi, (_, url) => {
+        const src = ekstrakDirectUrl(url.trim(), 'IMG');
+        return `<span class="media-wrapper"><img src="${src}" class="media-img" alt="Gambar Soal" loading="lazy"></span>`;
+      });
+
+      // 2. Ganti [AUDIO:...]
+      hasil = hasil.replace(/\[AUDIO:(.*?)\]/gi, (_, url) => {
+        const src = ekstrakDirectUrl(url.trim(), 'AUDIO');
+        return `<span class="media-wrapper"><audio controls controlsList="nodownload" class="media-audio" src="${src}">Browser tidak mendukung audio.</audio></span>`;
+      });
+
+      // 3. Ganti [VIDEO:...]
+      hasil = hasil.replace(/\[VIDEO:(.*?)\]/gi, (_, url) => {
+        const src = ekstrakDirectUrl(url.trim(), 'VIDEO');
+        return `<span class="media-wrapper"><video controls controlsList="nodownload" playsinline class="media-video" src="${src}">Browser tidak mendukung video.</video></span>`;
+      });
+
+      // Ubah baris baru (\n) menjadi <br> agar paragraf soal rapi
+      return hasil.replace(/\n/g, '<br>');
+    }
 
     async function panggilGAS(payload) {
       const res = await fetch(GAS_URL, {
@@ -460,7 +523,6 @@
       }
     }
 
-    // Show / Hide Panel Navigasi Nomor Soal
     function toggleNavigasi() {
       simpanJawabanSoalAktif();
       const panel = document.getElementById("panel-navigasi");
@@ -475,7 +537,6 @@
       }
     }
 
-    // Render Tombol Nomor Soal di Panel Navigasi
     function renderGridNavigasi() {
       const grid = document.getElementById("grid-nomor");
       grid.innerHTML = daftarSoalGlobal.map((s, idx) => {
@@ -494,13 +555,11 @@
       const val = jawabanTersimpan[soal.no];
       if (!val) return false;
       if (soal.tipe === 'BS') {
-        // Dianggap terjawab jika minimal ada 1 pernyataan yang dipilih (bukan '-' semua)
         return val.split(',').some(item => item === 'B' || item === 'S');
       }
       return val.trim() !== "";
     }
 
-    // Menyimpan jawaban dari soal yang sedang tampil ke objek jawabanTersimpan
     function simpanJawabanSoalAktif() {
       if (!daftarSoalGlobal.length) return;
       const s = daftarSoalGlobal[indexSoalAktif];
@@ -540,7 +599,6 @@
       tampilkanSoal(idx);
     }
 
-    // Menampilkan 1 soal sesuai index
     function tampilkanSoal(idx) {
       indexSoalAktif = idx;
       const s = daftarSoalGlobal[idx];
@@ -561,7 +619,7 @@
           return `
             <label class="opsi-label">
               <input type="radio" name="soal_${s.no}" value="${H}" ${checked} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();">
-              <span><b>${H}.</b> ${s[h]}</span>
+              <div class="opsi-konten"><b>${H}.</b> ${formatKontenMedia(s[h])}</div>
             </label>`;
         }).join('');
       } 
@@ -575,7 +633,7 @@
           return `
             <label class="opsi-label">
               <input type="checkbox" name="soal_${s.no}" value="${H}" ${checked} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();">
-              <span><b>${H}.</b> ${s[h]}</span>
+              <div class="opsi-konten"><b>${H}.</b> ${formatKontenMedia(s[h])}</div>
             </label>`;
         }).join('');
       } 
@@ -588,7 +646,7 @@
           const cekS = (arrayBS[i] === 'S') ? 'checked' : '';
           return `
             <tr>
-              <td>${s[h]}</td>
+              <td>${formatKontenMedia(s[h])}</td>
               <td class="tengah"><input type="radio" name="soal_${s.no}_item_${i}" value="B" ${cekB} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();"></td>
               <td class="tengah"><input type="radio" name="soal_${s.no}_item_${i}" value="S" ${cekS} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();"></td>
             </tr>`;
@@ -612,11 +670,12 @@
           <span class="nomor-besar">Soal No. ${s.no} dari ${totalSoal}</span>
           ${badgeHTML}
         </div>
-        <p style="font-size:16px; color:#0f172a; line-height:1.5; margin-bottom:14px;"><b>${s.tanya}</b></p>
+        <div style="font-size:16px; color:#0f172a; line-height:1.55; margin-bottom:14px;">
+          <b>${s.no}.</b> ${formatKontenMedia(s.tanya)}
+        </div>
         ${kontenOpsi}
       `;
 
-      // Atur status tombol Sebelumnya, Berikutnya, dan Selesai
       document.getElementById("btn-sebelumnya").disabled = (idx === 0);
 
       if (idx === totalSoal - 1) {
@@ -648,7 +707,7 @@
     async function tanganiPelanggaran(alasan) {
       if (!ujianBerjalan || sedangProsesLogout) return;
       sedangProsesLogout = true;
-      simpanJawabanSoalAktif(); // Pastikan jawaban soal terakhir yang sedang dibuka ikut tersimpan
+      simpanJawabanSoalAktif();
       ujianBerjalan = false;
 
       if (timerBlur) {
