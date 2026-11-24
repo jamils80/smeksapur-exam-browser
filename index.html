@@ -2,37 +2,240 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Ujian Online Terpantau</title>
+  <title>Ujian Online - SMK Negeri 1 Purwoasri</title>
   <!-- Library SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; user-select: none; background: #f4f6f9; }
-    .box { background: white; border: 1px solid #ddd; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    input, button { padding: 12px; margin: 8px 0; width: 100%; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #1976d2; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 15px; }
-    button:hover { background: #1565c0; }
+    * { box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+      overflow-x: hidden;
+      background-color: #0f172a;
+    }
+
+    /* Layer Background Gambar dari Google Drive dengan Animasi Dinamis */
+    .bg-animated {
+      position: fixed;
+      inset: -5%;
+      width: 110%;
+      height: 110%;
+      background-image: url('https://lh3.googleusercontent.com/d/1Vo2a5qqGEPQm3XzyB0-qZr9NdBvNtXGX');
+      background-size: cover;
+      background-position: center;
+      z-index: -2;
+      animation: kenBurnsDinamis 25s ease-in-out infinite alternate;
+    }
+
+    /* Lapisan Gelap Transparan */
+    .bg-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(30, 58, 138, 0.58));
+      backdrop-filter: blur(3px);
+      z-index: -1;
+    }
+
+    @keyframes kenBurnsDinamis {
+      0% { transform: scale(1) translate(0px, 0px); }
+      50% { transform: scale(1.08) translate(-15px, -10px); }
+      100% { transform: scale(1.12) translate(15px, 10px); }
+    }
+
+    @keyframes munculHalus {
+      from { opacity: 0; transform: translateY(25px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Desain Kartu Utama (Glassmorphism) */
+    .box {
+      width: 100%;
+      max-width: 740px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+      animation: munculHalus 0.7s ease-out;
+    }
+
+    #halaman-login {
+      max-width: 480px;
+    }
+
+    /* Styling Kop / Header Sekolah */
+    .kop-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      border-bottom: 3px double #1e293b;
+      text-align: left;
+    }
+
+    .kop-logo {
+      width: 68px;
+      height: auto;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .kop-teks {
+      line-height: 1.3;
+      color: #0f172a;
+    }
+
+    .kop-teks .baris-1 {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .kop-teks .baris-2 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .kop-teks .baris-3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-top: 2px;
+    }
+
+    input {
+      padding: 13px 15px;
+      margin: 8px 0;
+      width: 100%;
+      border-radius: 8px;
+      border: 1.5px solid #cbd5e1;
+      font-size: 15px;
+      transition: all 0.3s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    button {
+      padding: 13px;
+      margin-top: 14px;
+      width: 100%;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 15px;
+      letter-spacing: 0.3px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-selesai {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+    }
+
+    .btn-selesai:hover {
+      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35);
+    }
+
+    .opsi-label {
+      display: block;
+      padding: 10px 14px;
+      margin: 6px 0;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .opsi-label:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
+    }
+
     #halaman-ujian, #layar-blokir { display: none; }
+
     #layar-blokir {
-      position: fixed; inset: 0; background: #b71c1c; color: white;
-      text-align: center; padding-top: 18%; z-index: 9999;
+      position: fixed;
+      inset: 0;
+      background: rgba(185, 28, 28, 0.96);
+      backdrop-filter: blur(8px);
+      color: white;
+      text-align: center;
+      padding-top: 18%;
+      z-index: 9999;
+      animation: munculHalus 0.4s ease;
     }
   </style>
 </head>
 <body oncontextmenu="return false;">
 
+  <!-- Elemen Background Dinamis -->
+  <div class="bg-animated"></div>
+  <div class="bg-overlay"></div>
+
   <!-- 1. FORM LOGIN -->
   <div id="halaman-login" class="box">
-    <h2 style="margin-top:0;">Login Peserta Ujian</h2>
+    <!-- Kop Header -->
+    <div class="kop-header">
+      <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" alt="Logo SMK Negeri 1 Purwoasri" class="kop-logo">
+      <div class="kop-teks">
+        <div class="baris-1">PEMERINTAH PROVINSI JAWA TIMUR</div>
+        <div class="baris-2">DINAS PENDIDIKAN</div>
+        <div class="baris-3">SMK NEGERI 1 PURWOASRI</div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 15px;">
+      <h3 style="margin: 0 0 4px 0; color: #1e293b;">Portal Ujian Online</h3>
+      <span style="color: #64748b; font-size: 13px;">Silakan masuk menggunakan akun peserta Anda</span>
+    </div>
+
     <input type="text" id="userId" placeholder="Masukkan User ID">
     <input type="password" id="password" placeholder="Masukkan Password">
     <button onclick="mulaiLogin()">Masuk & Mulai Ujian (Fullscreen)</button>
   </div>
 
   <!-- 2. HALAMAN UJIAN -->
-  <div id="halaman-ujian" class="box">
-    <h3 id="info-peserta" style="border-bottom: 2px solid #eee; padding-bottom: 10px;"></h3>
+  <div id="halaman-ujian" class="box" style="margin: 30px auto;">
+    <!-- Kop Header di Halaman Ujian -->
+    <div class="kop-header">
+      <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" alt="Logo SMK Negeri 1 Purwoasri" class="kop-logo">
+      <div class="kop-teks">
+        <div class="baris-1">PEMERINTAH PROVINSI JAWA TIMUR</div>
+        <div class="baris-2">DINAS PENDIDIKAN</div>
+        <div class="baris-3">SMK NEGERI 1 PURWOASRI</div>
+      </div>
+    </div>
+
+    <div id="info-peserta" style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px 14px; border-radius: 6px; margin-bottom: 20px; font-weight: bold; color: #1e3a8a;"></div>
     <div id="wadah-soal"></div>
-    <button onclick="konfirmasiKirim()" style="background: #2e7d32;">Selesai & Kirim Jawaban</button>
+    <button class="btn-selesai" onclick="konfirmasiKirim()">Selesai & Kirim Jawaban</button>
   </div>
 
   <!-- 3. LAYAR BLOKIR PELANGGARAN -->
@@ -43,7 +246,7 @@
 
   <script>
     // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
-    const GAS_URL = "TEMPEL_URL_WEB_APP_GAS_ANDA_DI_SINI";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwMuxMhxJ8DVJoHpAiZb0t8zaViGe6k7smeqgO99toHj7S6Me17LW2djpd5qI1rBnh-Sw/exec";
     
     let userAktif = "";
     let ujianBerjalan = false;
@@ -71,7 +274,6 @@
         return;
       }
 
-      // Tampilkan loading SweetAlert
       Swal.fire({
         title: 'Memverifikasi Akun...',
         text: 'Mohon tunggu sebentar',
@@ -93,26 +295,25 @@
 
         Swal.close();
 
-        // Aktifkan Fullscreen saat ujian dimulai
         if (document.documentElement.requestFullscreen) {
           await document.documentElement.requestFullscreen().catch(() => {});
         }
 
         userAktif = userId;
         ujianBerjalan = true;
+        document.body.style.alignItems = "flex-start";
         document.getElementById("halaman-login").style.display = "none";
         document.getElementById("halaman-ujian").style.display = "block";
-        document.getElementById("info-peserta").innerText = `Peserta: ${hasil.nama} (${userId})`;
+        document.getElementById("info-peserta").innerText = `Peserta: ${hasil.nama} (ID: ${userId})`;
 
-        // Render Soal
         const wadah = document.getElementById("wadah-soal");
         wadah.innerHTML = hasil.soal.map(s => `
-          <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #f0f0f0;">
-            <p><b>${s.no}. ${s.tanya}</b></p>
-            <label style="display:block; margin:5px 0;"><input type="radio" name="soal_${s.no}" value="A" style="width:auto;"> A. ${s.a}</label>
-            <label style="display:block; margin:5px 0;"><input type="radio" name="soal_${s.no}" value="B" style="width:auto;"> B. ${s.b}</label>
-            <label style="display:block; margin:5px 0;"><input type="radio" name="soal_${s.no}" value="C" style="width:auto;"> C. ${s.c}</label>
-            <label style="display:block; margin:5px 0;"><input type="radio" name="soal_${s.no}" value="D" style="width:auto;"> D. ${s.d}</label>
+          <div style="margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid #e2e8f0;">
+            <p style="font-size:16px; color:#0f172a;"><b>${s.no}. ${s.tanya}</b></p>
+            <label class="opsi-label"><input type="radio" name="soal_${s.no}" value="A" style="width:auto; margin-right:8px;"> A. ${s.a}</label>
+            <label class="opsi-label"><input type="radio" name="soal_${s.no}" value="B" style="width:auto; margin-right:8px;"> B. ${s.b}</label>
+            <label class="opsi-label"><input type="radio" name="soal_${s.no}" value="C" style="width:auto; margin-right:8px;"> C. ${s.c}</label>
+            <label class="opsi-label"><input type="radio" name="soal_${s.no}" value="D" style="width:auto; margin-right:8px;"> D. ${s.d}</label>
           </div>
         `).join("");
 
@@ -138,7 +339,6 @@
           confirmButtonColor: '#d33',
           allowOutsideClick: false
         }).then(() => {
-          // Kembalikan ke mode fullscreen jika sempat keluar
           if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
             document.documentElement.requestFullscreen().catch(() => {});
           }
@@ -161,24 +361,20 @@
       }
     }
 
-    // 1. Deteksi pindah tab / minimize
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) tanganiPelanggaran("Berpindah tab atau me-minimize browser");
     });
 
-    // 2. Deteksi klik aplikasi lain
     window.addEventListener("blur", () => {
       tanganiPelanggaran("Jendela browser kehilangan fokus");
     });
 
-    // 3. Deteksi keluar dari mode Fullscreen (tekan ESC)
     document.addEventListener("fullscreenchange", () => {
       if (!document.fullscreenElement && ujianBerjalan) {
         tanganiPelanggaran("Keluar dari mode Fullscreen");
       }
     });
 
-    // 4. Blokir tombol pintasan Inspect Element / Copy
     document.addEventListener("keydown", (e) => {
       if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I") || (e.ctrlKey && e.key === "u")) {
         e.preventDefault();
@@ -192,8 +388,8 @@
         text: 'Pastikan semua soal sudah terisi. Anda tidak dapat mengubah jawaban setelah dikirim.',
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#2e7d32',
-        cancelButtonColor: '#757575',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#64748b',
         confirmButtonText: 'Ya, Kirim Jawaban!',
         cancelButtonText: 'Batal'
       }).then((result) => {
@@ -224,15 +420,15 @@
       Swal.fire({
         icon: 'success',
         title: 'Ujian Selesai!',
-        html: `Jawaban Anda berhasil direkam.<br>Skor Akhir Anda: <b style="font-size:24px; color:#2e7d32;">${hasil.skor}</b>`,
+        html: `Jawaban Anda berhasil direkam.<br>Skor Akhir Anda: <b style="font-size:26px; color:#16a34a;">${hasil.skor}</b>`,
         confirmButtonText: 'Tutup'
       });
 
       document.getElementById("halaman-ujian").innerHTML = `
-        <div style="text-align:center; padding: 20px;">
+        <div style="text-align:center; padding: 30px;">
           <h2>Ujian Telah Selesai</h2>
-          <p>Terima kasih telah mengikuti ujian dengan jujur.</p>
-          <p style="font-size: 20px;">Skor Akhir Anda: <b>${hasil.skor}</b></p>
+          <p style="color:#475569;">Terima kasih telah mengikuti ujian dengan jujur.</p>
+          <p style="font-size: 22px; margin-top: 20px;">Skor Akhir Anda: <b style="color:#16a34a;">${hasil.skor}</b></p>
         </div>
       `;
     }
