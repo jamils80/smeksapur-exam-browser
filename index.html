@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Portal Ujian Online</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #layar-blokir {
+      display: none; position: fixed; inset: 0; background: #b71c1c;
+      color: white; text-align: center; padding-top: 20%; z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="area-ujian">
+    <h2>Ujian Sedang Berlangsung</h2>
+    <p>Sistem memantau fokus layar Anda secara otomatis.</p>
+    <!-- Area soal ujian -->
+  </div>
+
+  <div id="layar-blokir">
+    <h1>AKSES UJIAN DITUTUP</h1>
+    <p id="detail-pelanggaran"></p>
+  </div>
+
+  <script>
+    // Ganti dengan URL Web App hasil deploy Google Apps Script Anda
+    const GAS_API_URL = "https://script.google.com/macros/s/MASUKKAN_ID_DEPLOY_ANDA/exec";
+    const USER_ID = "PESERTA_001";
+    
+    let peringatan = 1;
+    let sudahLogout = false;
+
+    // Fungsi mengirim laporan ke Google Apps Script
+    function kirimKeGAS(aksi, keterangan) {
+      fetch(GAS_API_URL, {
+        method: "POST",
+        // Menggunakan text/plain agar terhindar dari blokir CORS preflight browser
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          userId: USER_ID,
+          aksi: aksi,
+          keterangan: keterangan
+        })
+      }).catch(err => console.error("Gagal kirim log:", err));
+    }
+
+    function prosesPelanggaran(alasan) {
+      if (sudahLogout) return;
+
+      if (peringatan > 0) {
+        peringatan--;
+        kirimKeGAS("PERINGATAN", alasan);
+        alert("PERINGATAN! Jangan meninggalkan layar ujian. Pelanggaran berikutnya akan otomatis logout.");
+      } else {
+        sudahLogout = true;
+        sessionStorage.clear();
+        localStorage.clear();
+
+        document.getElementById("area-ujian").style.display = "none";
+        document.getElementById("detail-pelanggaran").innerText = "Alasan: " + alasan;
+        document.getElementById("layar-blokir").style.display = "block";
+
+        kirimKeGAS("AUTO_LOGOUT", alasan);
+      }
+    }
+
+    // Pantau pindah tab / minimize
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) prosesPelanggaran("Pindah tab atau minimize browser");
+    });
+
+    // Pantau kehilangan fokus jendela (buka aplikasi lain / split screen)
+    window.addEventListener("blur", () => {
+      prosesPelanggaran("Klik di luar jendela ujian");
+    });
+  </script>
+</body>
+</html>
