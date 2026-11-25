@@ -779,57 +779,93 @@
     function downloadTemplateExcel() {
       const dataContoh = [
         ["No", "Tipe", "Pertanyaan", "OpsiA", "OpsiB", "OpsiC", "OpsiD", "OpsiE", "Kunci"],
-        [1, "PG", "Ibu kota Provinsi Jawa Timur adalah...", "Malang", "Kediri", "Surabaya", "Madiun", "Blitar", "C"],
-        [2, "PGK", "Manakah perangkat keras input komputer? (Pilih lebih dari 1)", "Keyboard", "Monitor", "Mouse", "Printer", "Scanner", "A,C,E"],
-        [3, "BS", "Tentukan Benar atau Salah pernyataan berikut:", "Kabel UTP digunakan untuk jaringan LAN", "IPv4 terdiri dari 64 bit", "Router menghubungkan dua jaringan berbeda", "", "", "B,S,B"]
+        [
+          1,
+          "PG",
+          "Ibu kota Provinsi Jawa Timur adalah...",
+          "Malang",
+          "Kediri",
+          "Surabaya",
+          "Madiun",
+          "Blitar",
+          "C"
+        ],
+        [
+          2,
+          "PGK",
+          "Manakah perangkat keras input komputer? (Pilih lebih dari 1)",
+          "Keyboard",
+          "Monitor",
+          "Mouse",
+          "Printer",
+          "Scanner",
+          "A,C,E"
+        ],
+        [
+          3,
+          "BS",
+          "Tentukan Benar atau Salah pernyataan berikut:",
+          "Kabel UTP digunakan untuk jaringan LAN",
+          "IPv4 terdiri dari 64 bit",
+          "Router menghubungkan dua jaringan berbeda",
+          "",
+          "",
+          "B,S,B"
+        ],
+        [
+          4,
+          "PG",
+          "Perhatikan gambar topologi berikut! [IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_SOAL/view?usp=sharing] Perangkat yang berada di tengah adalah...",
+          "Hub",
+          "Switch",
+          "Router",
+          "Access Point",
+          "Modem",
+          "B"
+        ],
+        [
+          5,
+          "PG",
+          "Manakah simbol komponen resistor tetap pada pilihan di bawah ini?",
+          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_A/view?usp=sharing]",
+          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_B/view?usp=sharing]",
+          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_C/view?usp=sharing]",
+          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_D/view?usp=sharing]",
+          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_E/view?usp=sharing]",
+          "A"
+        ],
+        [
+          6,
+          "PG",
+          "Dengarkan audio percakapan berikut dengan saksama! [AUDIO:https://drive.google.com/file/d/GANTI_ID_FILE_MP3/view?usp=sharing] Di manakah percakapan tersebut berlangsung? (Untuk video gunakan format [VIDEO:https://drive.google.com/file/d/GANTI_ID_FILE_MP4/view?usp=sharing])",
+          "Perpustakaan",
+          "Kantin Sekolah",
+          "Laboratorium Komputer",
+          "Ruang Guru",
+          "Bengkel Otomotif",
+          "C"
+        ]
       ];
+
       const ws = XLSX.utils.aoa_to_sheet(dataContoh);
+      
+      // Atur lebar kolom agar contoh media terbaca rapi saat dibuka di Excel
+      ws['!cols'] = [
+        { wch: 5 },  // No
+        { wch: 8 },  // Tipe
+        { wch: 55 }, // Pertanyaan
+        { wch: 30 }, // OpsiA
+        { wch: 30 }, // OpsiB
+        { wch: 30 }, // OpsiC
+        { wch: 30 }, // OpsiD
+        { wch: 30 }, // OpsiE
+        { wch: 10 }  // Kunci
+      ];
+
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "TemplateSoal");
       XLSX.writeFile(wb, "Template_Soal_SMKN1_Purwoasri.xlsx");
     }
-
-    function bacaFileExcel(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetPertama = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheetPertama, { defval: "" });
-
-        soalHasilParse = rows.map((r, idx) => ({
-          no: r.No || (idx + 1),
-          tipe: String(r.Tipe || 'PG').trim().toUpperCase(),
-          tanya: String(r.Pertanyaan || ''),
-          a: String(r.OpsiA || ''),
-          b: String(r.OpsiB || ''),
-          c: String(r.OpsiC || ''),
-          d: String(r.OpsiD || ''),
-          e: String(r.OpsiE || ''),
-          kunci: String(r.Kunci || '').trim().toUpperCase()
-        })).filter(s => s.tanya.trim() !== "");
-
-        document.getElementById("judul-preview").innerText = `Pratinjau: ${soalHasilParse.length} soal siap diunggah`;
-        document.getElementById("tbody-preview-soal").innerHTML = soalHasilParse.map(s => `
-          <tr>
-            <td>${s.no}</td>
-            <td><b>${s.tipe}</b></td>
-            <td>${s.tanya}</td>
-            <td>${s.a}</td>
-            <td>${s.b}</td>
-            <td>${s.c}</td>
-            <td>${s.d}</td>
-            <td>${s.e}</td>
-            <td><b>${s.kunci}</b></td>
-          </tr>`).join('');
-        document.getElementById("preview-upload-box").style.display = "block";
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
     async function kirimSoalKeServer() {
       const kodeMapel = document.getElementById("uploadTargetMapel").value;
       const timpaSoalLama = document.getElementById("modeTimpaSoal").value === "true";
