@@ -532,7 +532,6 @@
       }
     }
 
-    // --- FITUR UBAH PASSWORD MANDIRI ---
     async function bukaModalGantiPassword() {
       const { value: formValues } = await Swal.fire({
         title: 'Ubah Password Akun Anda',
@@ -563,7 +562,7 @@
         Swal.fire({ title: 'Menyimpan Password...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const res = await panggilGAS({ aksi: 'PORTAL_GANTI_PASSWORD', passwordBaru: formValues });
         if (res.status === 'success') {
-          portalPassTersimpan = formValues; // Perbarui password sesi aktif agar tidak ter-logout
+          portalPassTersimpan = formValues;
           Swal.fire('Berhasil!', res.pesan, 'success');
         } else {
           Swal.fire('Gagal', res.pesan, 'error');
@@ -595,7 +594,6 @@
       }
     }
 
-    // --- FUNGSI KHUSUS ADMIN / PROKTOR ---
     function renderTabelSesi() {
       const fMapel = document.getElementById("filterMapel").value;
       const fStatus = document.getElementById("filterStatus").value;
@@ -775,7 +773,7 @@
       }
     }
 
-    // --- FUNGSI BANK SOAL (ADMIN & GURU) ---
+    // --- TEMPLATE EXCEL DENGAN CONTOH LENGKAP MEDIA (GAMBAR, AUDIO, VIDEO) ---
     function downloadTemplateExcel() {
       const dataContoh = [
         ["No", "Tipe", "Pertanyaan", "OpsiA", "OpsiB", "OpsiC", "OpsiD", "OpsiE", "Kunci"],
@@ -837,7 +835,7 @@
         [
           6,
           "PG",
-          "Dengarkan audio percakapan berikut dengan saksama! [AUDIO:https://drive.google.com/file/d/GANTI_ID_FILE_MP3/view?usp=sharing] Di manakah percakapan tersebut berlangsung? (Untuk video gunakan format [VIDEO:https://drive.google.com/file/d/GANTI_ID_FILE_MP4/view?usp=sharing])",
+          "Dengarkan audio percakapan berikut! [AUDIO:https://drive.google.com/file/d/GANTI_ID_FILE_MP3/view?usp=sharing] Di manakah percakapan tersebut terjadi? (Untuk video gunakan format [VIDEO:https://drive.google.com/file/d/GANTI_ID_FILE_MP4/view?usp=sharing])",
           "Perpustakaan",
           "Kantin Sekolah",
           "Laboratorium Komputer",
@@ -848,24 +846,64 @@
       ];
 
       const ws = XLSX.utils.aoa_to_sheet(dataContoh);
-      
-      // Atur lebar kolom agar contoh media terbaca rapi saat dibuka di Excel
       ws['!cols'] = [
-        { wch: 5 },  // No
-        { wch: 8 },  // Tipe
-        { wch: 55 }, // Pertanyaan
-        { wch: 30 }, // OpsiA
-        { wch: 30 }, // OpsiB
-        { wch: 30 }, // OpsiC
-        { wch: 30 }, // OpsiD
-        { wch: 30 }, // OpsiE
-        { wch: 10 }  // Kunci
+        { wch: 5 },
+        { wch: 8 },
+        { wch: 55 },
+        { wch: 32 },
+        { wch: 32 },
+        { wch: 32 },
+        { wch: 32 },
+        { wch: 32 },
+        { wch: 10 }
       ];
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "TemplateSoal");
       XLSX.writeFile(wb, "Template_Soal_SMKN1_Purwoasri.xlsx");
     }
+
+    function bacaFileExcel(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetPertama = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheetPertama, { defval: "" });
+
+        soalHasilParse = rows.map((r, idx) => ({
+          no: r.No || (idx + 1),
+          tipe: String(r.Tipe || 'PG').trim().toUpperCase(),
+          tanya: String(r.Pertanyaan || ''),
+          a: String(r.OpsiA || ''),
+          b: String(r.OpsiB || ''),
+          c: String(r.OpsiC || ''),
+          d: String(r.OpsiD || ''),
+          e: String(r.OpsiE || ''),
+          kunci: String(r.Kunci || '').trim().toUpperCase()
+        })).filter(s => s.tanya.trim() !== "");
+
+        document.getElementById("judul-preview").innerText = `Pratinjau: ${soalHasilParse.length} soal siap diunggah`;
+        document.getElementById("tbody-preview-soal").innerHTML = soalHasilParse.map(s => `
+          <tr>
+            <td>${s.no}</td>
+            <td><b>${s.tipe}</b></td>
+            <td>${s.tanya}</td>
+            <td>${s.a}</td>
+            <td>${s.b}</td>
+            <td>${s.c}</td>
+            <td>${s.d}</td>
+            <td>${s.e}</td>
+            <td><b>${s.kunci}</b></td>
+          </tr>`).join('');
+        document.getElementById("preview-upload-box").style.display = "block";
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
     async function kirimSoalKeServer() {
       const kodeMapel = document.getElementById("uploadTargetMapel").value;
       const timpaSoalLama = document.getElementById("modeTimpaSoal").value === "true";
