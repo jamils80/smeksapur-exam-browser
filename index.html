@@ -22,7 +22,6 @@
       background-color: #0f172a;
     }
 
-    /* Background Dinamis dari Google Drive */
     .bg-animated {
       position: fixed;
       inset: -5%;
@@ -54,7 +53,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Kartu Utama */
     .box {
       width: 100%;
       max-width: 820px;
@@ -69,7 +67,6 @@
 
     #halaman-login { max-width: 480px; }
 
-    /* Kop Header Resmi Sekolah */
     .kop-header {
       display: flex;
       align-items: center;
@@ -119,7 +116,6 @@
 
     .btn-utama:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35); }
 
-    /* Baris Info Peserta & Tombol Show/Hide Navigasi */
     .baris-atas-ujian {
       display: flex;
       justify-content: space-between;
@@ -148,7 +144,6 @@
     }
     .btn-toggle-nav:hover { background: #1d4ed8; }
 
-    /* Panel Navigasi Nomor Soal (Show/Hide) */
     #panel-navigasi {
       display: none;
       background: #f8fafc;
@@ -192,7 +187,6 @@
     .btn-nomor.terjawab { background: #16a34a; color: white; border-color: #15803d; }
     .btn-nomor.aktif { background: #2563eb; color: white; border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25); }
 
-    /* Area Soal Tunggal */
     .kartu-soal-tunggal { min-height: 260px; padding: 10px 4px; }
 
     .header-nomor-soal {
@@ -225,11 +219,7 @@
     .badge-pgk { background: #fef3c7; color: #b45309; }
     .badge-bs { background: #f3e8ff; color: #7e22ce; }
 
-    /* Styling Media (Gambar, Audio, Video) di Soal & Opsi */
-    .media-wrapper {
-      display: block;
-      margin: 10px 0;
-    }
+    .media-wrapper { display: block; margin: 10px 0; }
     .media-img {
       max-width: 100%;
       max-height: 320px;
@@ -239,27 +229,10 @@
       display: block;
       margin-top: 6px;
     }
-    .opsi-label .media-img {
-      max-height: 160px; /* Ukuran gambar lebih proporsional jika di dalam pilihan jawaban */
-    }
-    .media-audio {
-      width: 100%;
-      max-width: 420px;
-      height: 40px;
-      margin-top: 6px;
-      display: block;
-    }
-    .media-video {
-      width: 100%;
-      max-width: 540px;
-      max-height: 320px;
-      border-radius: 8px;
-      background: #000;
-      margin-top: 6px;
-      display: block;
-    }
+    .opsi-label .media-img { max-height: 160px; }
+    .media-audio { width: 100%; max-width: 420px; height: 40px; margin-top: 6px; display: block; }
+    .media-video { width: 100%; max-width: 540px; max-height: 320px; border-radius: 8px; background: #000; margin-top: 6px; display: block; }
 
-    /* Opsi Jawaban PG & PGK */
     .opsi-label {
       display: flex;
       align-items: flex-start;
@@ -276,19 +249,12 @@
     .opsi-label input { margin-top: 4px; width: auto; cursor: pointer; transform: scale(1.15); flex-shrink: 0; }
     .opsi-konten { flex: 1; line-height: 1.45; }
 
-    /* Tabel Pilihan Ganda Kompleks Benar-Salah */
-    .tabel-bs {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 14px;
-    }
+    .tabel-bs { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
     .tabel-bs th, .tabel-bs td { border: 1px solid #cbd5e1; padding: 10px; }
     .tabel-bs th { background: #f1f5f9; color: #1e293b; text-align: center; }
     .tabel-bs td.tengah { text-align: center; width: 75px; }
     .tabel-bs input[type="radio"] { transform: scale(1.2); cursor: pointer; }
 
-    /* Tombol Navigasi Bawah */
     .navigasi-bawah {
       display: flex;
       justify-content: space-between;
@@ -358,7 +324,7 @@
     <button class="btn-utama" onclick="mulaiLogin()">Masuk & Mulai Ujian (Fullscreen)</button>
   </div>
 
-  <!-- 2. HALAMAN UJIAN (SATU LAYAR PER SOAL) -->
+  <!-- 2. HALAMAN UJIAN -->
   <div id="halaman-ujian" class="box">
     <div class="kop-header">
       <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" alt="Logo SMK Negeri 1 Purwoasri" class="kop-logo">
@@ -402,7 +368,7 @@
 
   <script>
     // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwMuxMhxJ8DVJoHpAiZb0t8zaViGe6k7smeqgO99toHj7S6Me17LW2djpd5qI1rBnh-Sw/exec";
+    const GAS_URL = "TEMPEL_URL_WEB_APP_GAS_ANDA_DI_SINI";
     
     let userAktif = "";
     let daftarSoalGlobal = [];
@@ -412,15 +378,14 @@
     let ujianBerjalan = false;
     let sedangProsesLogout = false;
     let timerBlur = null;
+    let intervalPengawas = null;
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    // FUNGSI PARSER MEDIA: Mengubah [IMG:url], [AUDIO:url], [VIDEO:url] menjadi elemen HTML
     function formatKontenMedia(teksRaw) {
       if (!teksRaw) return "";
       let hasil = String(teksRaw);
 
-      // Helper konversi link Google Drive ke direct link
       const ekstrakDirectUrl = (url, jenis) => {
         const matchDrive = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
         if (matchDrive && matchDrive[1]) {
@@ -434,25 +399,21 @@
         return url;
       };
 
-      // 1. Ganti [IMG:...]
       hasil = hasil.replace(/\[IMG:(.*?)\]/gi, (_, url) => {
         const src = ekstrakDirectUrl(url.trim(), 'IMG');
         return `<span class="media-wrapper"><img src="${src}" class="media-img" alt="Gambar Soal" loading="lazy"></span>`;
       });
 
-      // 2. Ganti [AUDIO:...]
       hasil = hasil.replace(/\[AUDIO:(.*?)\]/gi, (_, url) => {
         const src = ekstrakDirectUrl(url.trim(), 'AUDIO');
         return `<span class="media-wrapper"><audio controls controlsList="nodownload" class="media-audio" src="${src}">Browser tidak mendukung audio.</audio></span>`;
       });
 
-      // 3. Ganti [VIDEO:...]
       hasil = hasil.replace(/\[VIDEO:(.*?)\]/gi, (_, url) => {
         const src = ekstrakDirectUrl(url.trim(), 'VIDEO');
         return `<span class="media-wrapper"><video controls controlsList="nodownload" playsinline class="media-video" src="${src}">Browser tidak mendukung video.</video></span>`;
       });
 
-      // Ubah baris baru (\n) menjadi <br> agar paragraf soal rapi
       return hasil.replace(/\n/g, '<br>');
     }
 
@@ -465,6 +426,48 @@
       return res.json();
     }
 
+    async function masukFullscreenAman() {
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (e) {}
+    }
+
+    function mulaiPengawasanAktif() {
+      hentikanPengawasanAktif();
+      ujianBerjalan = true;
+
+      // Heartbeat check setiap 400ms: memastikan mode fullscreen & visibilitas selalu terjaga
+      intervalPengawas = setInterval(() => {
+        if (!ujianBerjalan || sedangProsesLogout) return;
+
+        // Cek 1: Jika tab disembunyikan / pindah aplikasi
+        if (document.hidden) {
+          tanganiPelanggaran("Berpindah tab atau membuka aplikasi lain");
+          return;
+        }
+
+        // Cek 2: Jika keluar dari Fullscreen (baik klik tombol X atas, ESC, maupun F11)
+        if (!isMobile && !document.fullscreenElement) {
+          tanganiPelanggaran("Keluar dari mode Fullscreen");
+          return;
+        }
+      }, 400);
+    }
+
+    function hentikanPengawasanAktif() {
+      ujianBerjalan = false;
+      if (intervalPengawas) {
+        clearInterval(intervalPengawas);
+        intervalPengawas = null;
+      }
+      if (timerBlur) {
+        clearTimeout(timerBlur);
+        timerBlur = null;
+      }
+    }
+
     async function mulaiLogin() {
       const userId = document.getElementById("userId").value.trim();
       const password = document.getElementById("password").value.trim();
@@ -473,6 +476,9 @@
         Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Silakan isi User ID dan Password terlebih dahulu!' });
         return;
       }
+
+      // Masuk fullscreen langsung saat klik tombol login (masih dalam user gesture)
+      await masukFullscreenAman();
 
       Swal.fire({ title: 'Memverifikasi Akun...', text: 'Mohon tunggu sebentar', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
@@ -485,7 +491,6 @@
 
         Swal.close();
 
-        // 1. Set data sesi terlebih dahulu
         userAktif = userId;
         daftarSoalGlobal = hasil.soal;
         jawabanTersimpan = hasil.draftJawaban || {};
@@ -505,29 +510,24 @@
 
         tampilkanSoal(0);
 
-        // 2. Masuk ke Fullscreen terlebih dahulu baru aktifkan sensor ujianBerjalan
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen().catch(() => {});
-        }
-
-        // Beri jeda 300ms agar transisi fullscreen selesai, lalu aktifkan pemantauan penuh
-        setTimeout(() => {
-          ujianBerjalan = true;
-        }, 300);
-
         if (hasil.draftJawaban && Object.keys(hasil.draftJawaban).length > 0) {
-          Swal.fire({
+          // Tampilkan info pemulihan dulu, baru nyalakan sensor pengawas setelah siswa klik "Lanjutkan Ujian"
+          await Swal.fire({
             icon: 'info',
             title: 'Jawaban Sebelumnya Dipulihkan',
-            text: 'Jawaban Anda sebelum logout pelanggaran pertama telah dimuat kembali. Jangan tinggalkan halaman ujian lagi karena jawaban akan dihapus permanen!',
-            confirmButtonText: 'Lanjutkan Ujian'
-          }).then(() => {
-            // Pastikan kembali ke fullscreen setelah klik tombol Lanjutkan Ujian
-            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-              document.documentElement.requestFullscreen().catch(() => {});
-            }
+            text: 'Jawaban Anda sebelum logout pelanggaran pertama telah dimuat kembali. Jangan tinggalkan halaman ujian atau keluar dari Fullscreen lagi karena seluruh jawaban akan DIHAPUS!',
+            confirmButtonText: 'Lanjutkan Ujian',
+            allowOutsideClick: false
           });
+          await masukFullscreenAman();
+        } else {
+          await masukFullscreenAman();
         }
+
+        // Beri jeda 500ms setelah masuk fullscreen agar stabil, lalu aktifkan sensor pengawas
+        setTimeout(() => {
+          mulaiPengawasanAktif();
+        }, 500);
 
       } catch (err) {
         Swal.fire({ icon: 'error', title: 'Kesalahan Koneksi', text: 'Gagal terhubung ke server ujian. Periksa koneksi internet Anda.' });
@@ -701,22 +701,17 @@
     }
 
     function kembaliKeHalamanLogin() {
-      ujianBerjalan = false;
+      hentikanPengawasanAktif();
       userAktif = "";
       daftarSoalGlobal = [];
       jawabanTersimpan = {};
       
-      // 1. Bersihkan area soal dan form password
       document.getElementById("wadah-soal").innerHTML = "";
       document.getElementById("password").value = "";
-      
-      // 2. Sembunyikan halaman ujian dan tampilkan halaman login
       document.getElementById("halaman-ujian").style.display = "none";
       document.getElementById("panel-navigasi").style.display = "none";
       document.getElementById("halaman-login").style.display = "block";
-      document.body.style.alignItems = "center";
 
-      // 3. Keluar dari fullscreen secara aman tanpa membenturkan render UI
       setTimeout(() => {
         try {
           if (document.fullscreenElement) {
@@ -725,19 +720,12 @@
         } catch (e) {}
       }, 150);
     }
+
     async function tanganiPelanggaran(alasan) {
       if (!ujianBerjalan || sedangProsesLogout) return;
       sedangProsesLogout = true;
-      
-      // Kunci status ujian segera agar tidak memicu event berulang (double trigger)
-      ujianBerjalan = false;
+      hentikanPengawasanAktif();
 
-      if (timerBlur) {
-        clearTimeout(timerBlur);
-        timerBlur = null;
-      }
-
-      // Simpan jawaban soal terakhir jika ini pelanggaran ke-1
       const pelanggaranKe = jumlahPelanggaranSaatIni + 1;
       if (pelanggaranKe === 1) {
         simpanJawabanSoalAktif();
@@ -745,10 +733,8 @@
       const jawabanSekarang = pelanggaranKe === 1 ? { ...jawabanTersimpan } : {};
       const idPelanggar = userAktif;
 
-      // Kembalikan ke tampilan halaman login terlebih dahulu
       kembaliKeHalamanLogin();
 
-      // Tampilkan peringatan setelah halaman login stabil (jeda 250ms)
       setTimeout(() => {
         if (pelanggaranKe === 1) {
           Swal.fire({
@@ -771,7 +757,6 @@
         }
       }, 250);
 
-      // Kirim laporan ke Google Apps Script di latar belakang
       try {
         await panggilGAS({
           aksi: "PELANGGARAN",
@@ -785,6 +770,42 @@
         sedangProsesLogout = false;
       }
     }
+
+    // Event listener tambahan untuk deteksi instan
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && ujianBerjalan) {
+        tanganiPelanggaran("Berpindah tab, membuka aplikasi lain, atau layar terbagi");
+      }
+    });
+
+    window.addEventListener("blur", () => {
+      if (!ujianBerjalan) return;
+      timerBlur = setTimeout(() => {
+        if (!document.hasFocus() && ujianBerjalan) {
+          tanganiPelanggaran("Jendela browser kehilangan fokus");
+        }
+      }, 1200);
+    });
+
+    window.addEventListener("focus", () => {
+      if (timerBlur) {
+        clearTimeout(timerBlur);
+        timerBlur = null;
+      }
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement && ujianBerjalan && !isMobile) {
+        tanganiPelanggaran("Keluar dari mode Fullscreen");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I") || (e.ctrlKey && e.key === "u")) {
+        e.preventDefault();
+        tanganiPelanggaran("Mencoba membuka Inspect Element / Source Code");
+      }
+    });
 
     function konfirmasiKirim() {
       simpanJawabanSoalAktif();
@@ -808,7 +829,7 @@
     }
 
     async function prosesKirimJawaban() {
-      ujianBerjalan = false;
+      hentikanPengawasanAktif();
       Swal.fire({ title: 'Menyimpan & Mengoreksi Jawaban...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
       const hasil = await panggilGAS({ aksi: "SUBMIT", userId: userAktif, jawaban: jawabanTersimpan });
