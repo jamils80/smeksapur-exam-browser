@@ -480,7 +480,7 @@
     }
 
     function terapkanHakAksesUI(userObj) {
-      roleAktif = userObj.role;
+      roleAktif = String(userObj.role || '').trim().toUpperCase();
       const badge = document.getElementById("badge-hak-akses");
       const infoUser = document.getElementById("info-user-login");
       infoUser.innerText = `Login sebagai: ${userObj.nama} (@${userObj.username})`;
@@ -488,14 +488,20 @@
       if (roleAktif === 'ADMIN') {
         badge.innerText = "ADMIN / PROKTOR";
         badge.className = "badge-role role-admin";
-        document.querySelectorAll('.khusus-admin').forEach(el => {
-          if (el.classList.contains('tab-btn')) el.style.display = 'inline-block';
+        // Pastikan semua tombol tab admin terlihat dan konten tab tidak tertimpa display:none inline
+        document.querySelectorAll('.tab-btn.khusus-admin').forEach(el => {
+          el.style.display = 'inline-block';
+        });
+        document.querySelectorAll('.tab-content.khusus-admin').forEach(el => {
+          el.style.removeProperty('display');
         });
         bukaTab('tab-monitoring', document.getElementById('btn-tab-monitoring'));
       } else {
         badge.innerText = "GURU MAPEL";
         badge.className = "badge-role role-guru";
-        document.querySelectorAll('.khusus-admin').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.khusus-admin').forEach(el => {
+          el.style.display = 'none';
+        });
         bukaTab('tab-upload', document.getElementById('btn-tab-upload'));
       }
     }
