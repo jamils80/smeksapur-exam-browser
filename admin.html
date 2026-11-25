@@ -489,7 +489,6 @@
       if (roleAktif === 'ADMIN') {
         badge.innerText = "ADMIN / PROKTOR";
         badge.className = "badge-role role-admin";
-        // Pastikan semua tombol tab admin terlihat dan konten tab tidak tertimpa display:none inline
         document.querySelectorAll('.tab-btn.khusus-admin').forEach(el => {
           el.style.display = 'inline-block';
         });
@@ -517,7 +516,7 @@
         }
         Swal.close();
 
-        dataMapelGlobal = res.mapel;
+        dataMapelGlobal = res.mapel || [];
         dataSesiGlobal = res.sesi || [];
         daftarAkunGlobal = res.daftarAkun || [];
         jumlahSoalGlobal = res.jumlahSoal || {};
@@ -529,7 +528,7 @@
         }
 
         isiDropdownMapel();
-        if (res.user.role === 'ADMIN') {
+        if (roleAktif === 'ADMIN') {
           renderTabelSesi();
           renderTabelMapel();
           renderTabelAkun();
@@ -601,124 +600,53 @@
       }
     }
 
-    function renderTabelAkun() {
-      const tbody = document.getElementById("tbody-akun");
-      tbody.innerHTML = daftarAkunGlobal.map(a => {
-        const sedangDipakai = (a.username.toLowerCase() === portalUserTersimpan.toLowerCase());
-        const tombolHapus = sedangDipakai
-          ? `<span style="font-size:11px; color:#64748b; margin-left:6px;">(Sedang Login)</span>`
-          : `<button class="btn btn-danger" style="padding:6px 10px; font-size:11px;" onclick="hapusAkunPortal(${a.baris}, '${a.nama.replace(/'/g, "\\'")}')">🗑️ Hapus</button>`;
+    function renderTabelSesi() {
+      const fMapel = document.getElementById("filterMapel").value;
+      const fStatus = document.getElementById("filterStatus").value;
+      const qCari = document.getElementById("cariSiswa").value.toLowerCase();
+
+      let cMengerjakan = 0, cTerkunci = 0, cSelesai = 0;
+
+      const filtered = dataSesiGlobal.filter(s => {
+        if (fMapel && s.kodeMapel !== fMapel) return false;
+        if (s.status === 'MENGERJAKAN') cMengerjakan++;
+        if (s.status === 'TERKUNCI') cTerkunci++;
+        if (s.status === 'SELESAI') cSelesai++;
+
+        if (fStatus && s.status !== fStatus) return false;
+        if (qCari && !s.nama.toLowerCase().includes(qCari) && !s.userId.toLowerCase().includes(qCari)) return false;
+        return true;
+      });
+
+      document.getElementById("stat-mengerjakan").innerText = cMengerjakan;
+      document.getElementById("stat-terkunci").innerText = cTerkunci;
+      document.getElementById("stat-selesai").innerText = cSelesai;
+
+      const tbody = document.getElementById("tbody-sesi");
+      tbody.innerHTML = filtered.map(s => {
+        let badgeClass = 'bg-mengerjakan';
+        if (s.status === 'TERKUNCI') badgeClass = 'bg-terkunci';
+        if (s.status === 'SELESAI') badgeClass = 'bg-selesai';
+
+        const tombolReset = (s.status === 'TERKUNCI' || s.pelanggaran > 0)
+          ? `<button class="btn btn-danger" style="padding:6px 10px; font-size:11px;" onclick="resetPeserta(${s.baris}, '${s.nama.replace(/'/g, "\\'")}')">🔓 Reset / Buka Kunci</button>`
+          : `<span style="color:#94a3b8; font-size:12px;">Normal</span>`;
 
         return `
           <tr>
-            <td><b>${a.username}</b></td>
-            <td>${a.nama}</td>
-            <td><span class="badge ${a.role === 'ADMIN' ? 'role-admin' : 'role-guru'}">${a.role}</span></td>
-            <td>
-              <span class="badge ${a.status === 'AKTIF' ? 'bg-selesai' : 'bg-terkunci'}">${a.status}</span>
-            </td>
-            <td style="white-space:nowrap;">
-              <button class="btn btn-warning" style="padding:6px 10px; font-size:11px;" onclick='editAkunPortal(${JSON.stringify(a)})'>✏️ Edit</button>
-              ${tombolHapus}
-            </td>
+            <td><b>${s.userId}</b></td>
+            <td>${s.nama}</td>
+            <td>${s.kelas}</td>
+            <td>${s.kodeMapel}</td>
+            <td><span class="badge ${badgeClass}">${s.status}</span></td>
+            <td>${s.pelanggaran}x</td>
+            <td><b>${s.skor}</b></td>
+            <td style="font-size:12px; color:#475569;">${s.keterangan}</td>
+            <td>${tombolReset}</td>
           </tr>`;
       }).join('');
     }
 
-    async function editAkunPortal(akun) {
-      const { value: formValues } = await Swal.fire({
-        title: `Edit Akun (@${akun.username})`,
-        html: `
-          <div style="text-align:left; font-size:13px;">
-            <label style="font-weight:bold;">Username Login</label>
-            <input id="edit-akun-user" class="swal2-input" style="margin:4px 0 12px 0; width:100%;" value="${akun.username}">
-            
-            <label style="font-weight:bold;">Nama Lengkap & Gelar</label>
-            <input id="edit-akun-nama" class="swal2-input" style="margin:4px 0 12px 0; width:100%;" value="${akun.nama}">
-            
-            <label style="font-weight:bold;">Reset Password Baru (Kosongkan jika tidak diubah)</label>
-            <input id="edit-akun-pass" type="text" class="swal2-input" style="margin:4px 0 12px 0; width:100%;" placeholder="Biarkan kosong jika tetap">
-            
-            <label style="font-weight:bold;">Hak Akses (Role)</label>
-            <select id="edit-akun-role" class="swal2-select" style="margin:4px 0 12px 0; width:100%; display:block; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
-              <option value="GURU" ${akun.role === 'GURU' ? 'selected' : ''}>GURU (Hanya Upload & Cek Soal)</option>
-              <option value="ADMIN" ${akun.role === 'ADMIN' ? 'selected' : ''}>ADMIN (Akses Penuh Proktor)</option>
-            </select>
-            
-            <label style="font-weight:bold;">Status Akun</label>
-            <select id="edit-akun-status" class="swal2-select" style="margin:4px 0 4px 0; width:100%; display:block; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
-              <option value="AKTIF" ${akun.status === 'AKTIF' ? 'selected' : ''}>AKTIF</option>
-              <option value="NONAKTIF" ${akun.status === 'NONAKTIF' ? 'selected' : ''}>NONAKTIF (Blokir Login)</option>
-            </select>
-          </div>
-        `,
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonText: 'Simpan Perubahan',
-        cancelButtonText: 'Batal',
-        preConfirm: () => {
-          const username = document.getElementById('edit-akun-user').value.trim();
-          const nama = document.getElementById('edit-akun-nama').value.trim();
-          const passwordBaru = document.getElementById('edit-akun-pass').value.trim();
-          const roleBaru = document.getElementById('edit-akun-role').value;
-          const statusBaru = document.getElementById('edit-akun-status').value;
-
-          if (!username || !nama) {
-            Swal.showValidationMessage('Username dan Nama Lengkap wajib diisi!');
-            return false;
-          }
-          if (passwordBaru !== '' && passwordBaru.length < 5) {
-            Swal.showValidationMessage('Password baru minimal 5 karakter!');
-            return false;
-          }
-          return { username, nama, passwordBaru, roleBaru, statusBaru };
-        }
-      });
-
-      if (formValues) {
-        Swal.fire({ title: 'Menyimpan Perubahan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        const res = await panggilGAS({
-          aksi: 'ADMIN_EDIT_AKUN',
-          baris: akun.baris,
-          ...formValues
-        });
-
-        if (res.status === 'success') {
-          // Jika admin mengedit username atau password akunnya sendiri, perbarui sesi lokal
-          if (akun.username.toLowerCase() === portalUserTersimpan.toLowerCase()) {
-            portalUserTersimpan = formValues.username;
-            if (formValues.passwordBaru) portalPassTersimpan = formValues.passwordBaru;
-          }
-          Swal.fire('Berhasil', res.pesan, 'success');
-          muatDataPortal();
-        } else {
-          Swal.fire('Gagal', res.pesan, 'error');
-        }
-      }
-    }
-
-    async function hapusAkunPortal(baris, nama) {
-      const konfirm = await Swal.fire({
-        title: 'Hapus Akun Pengguna?',
-        html: `Akun atas nama <b>${nama}</b> akan dihapus permanen dari sistem.<br>Tindakan ini tidak dapat dibatalkan.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        confirmButtonText: 'Ya, Hapus Akun',
-        cancelButtonText: 'Batal'
-      });
-
-      if (!konfirm.isConfirmed) return;
-
-      Swal.fire({ title: 'Menghapus Akun...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      const res = await panggilGAS({ aksi: 'ADMIN_HAPUS_AKUN', baris });
-      if (res.status === 'success') {
-        Swal.fire('Terhapus', res.pesan, 'success');
-        muatDataPortal();
-      } else {
-        Swal.fire('Gagal', res.pesan, 'error');
-      }
-    }
     async function resetPeserta(baris, nama) {
       const konfirm = await Swal.fire({
         title: 'Buka Kunci & Reset Peserta?',
@@ -759,7 +687,7 @@
 
     function renderTabelMapel() {
       const tbody = document.getElementById("tbody-mapel");
-      tbody.innerHTML = dataMapelGlobal.map(m => `
+      tbody.innerHTML = dataMapelGlobal.map((m, idx) => `
         <tr>
           <td><b>${m.kode}</b></td>
           <td>${m.nama}</td>
@@ -769,12 +697,14 @@
           <td><b>${jumlahSoalGlobal[m.kode] || 0}</b> soal</td>
           <td>${m.status}</td>
           <td>
-            <button class="btn btn-warning" style="padding:6px 10px; font-size:11px;" onclick='isiFormEditMapel(${JSON.stringify(m)})'>✏️ Edit</button>
+            <button class="btn btn-warning" style="padding:6px 10px; font-size:11px;" onclick="isiFormEditMapel(${idx})">✏️ Edit</button>
           </td>
         </tr>`).join('');
     }
 
-    function isiFormEditMapel(m) {
+    function isiFormEditMapel(idx) {
+      const m = dataMapelGlobal[idx];
+      if (!m) return;
       document.getElementById("editBarisMapel").value = m.baris;
       document.getElementById("inKodeMapel").value = m.kode;
       document.getElementById("inNamaMapel").value = m.nama;
@@ -817,15 +747,27 @@
       muatDataPortal();
     }
 
+    // --- KELOLA AKUN (TAMBAH, EDIT, HAPUS) ---
     function renderTabelAkun() {
       const tbody = document.getElementById("tbody-akun");
-      tbody.innerHTML = daftarAkunGlobal.map(a => `
-        <tr>
-          <td><b>${a.username}</b></td>
-          <td>${a.nama}</td>
-          <td><span class="badge ${a.role === 'ADMIN' ? 'role-admin' : 'role-guru'}">${a.role}</span></td>
-          <td>${a.status}</td>
-        </tr>`).join('');
+      tbody.innerHTML = daftarAkunGlobal.map((a, idx) => {
+        const sedangDipakai = (a.username.toLowerCase() === portalUserTersimpan.toLowerCase());
+        const tombolHapus = sedangDipakai
+          ? `<span style="font-size:11px; color:#64748b; margin-left:6px;">(Sedang Login)</span>`
+          : `<button class="btn btn-danger" style="padding:6px 10px; font-size:11px;" onclick="hapusAkunPortal(${idx})">🗑️ Hapus</button>`;
+
+        return `
+          <tr>
+            <td><b>${a.username}</b></td>
+            <td>${a.nama}</td>
+            <td><span class="badge ${a.role === 'ADMIN' ? 'role-admin' : 'role-guru'}">${a.role}</span></td>
+            <td><span class="badge ${a.status === 'AKTIF' ? 'bg-selesai' : 'bg-terkunci'}">${a.status}</span></td>
+            <td style="white-space:nowrap;">
+              <button class="btn btn-warning" style="padding:6px 10px; font-size:11px;" onclick="editAkunPortal(${idx})">✏️ Edit</button>
+              ${tombolHapus}
+            </td>
+          </tr>`;
+      }).join('');
     }
 
     async function tambahAkunPortal() {
@@ -851,88 +793,122 @@
       }
     }
 
+    async function editAkunPortal(idx) {
+      const akun = daftarAkunGlobal[idx];
+      if (!akun) return;
+
+      const { value: formValues } = await Swal.fire({
+        title: `Edit Akun (@${akun.username})`,
+        html: `
+          <div style="text-align:left; font-size:13px;">
+            <label style="font-weight:bold;">Username Login</label>
+            <input id="edit-akun-user" class="swal2-input" style="margin:4px 0 12px 0; width:100%;" value="${akun.username}">
+            
+            <label style="font-weight:bold;">Nama Lengkap & Gelar</label>
+            <input id="edit-akun-nama" class="swal2-input" style="margin:4px 0 12px 0; width:100%;" value="${akun.nama}">
+            
+            <label style="font-weight:bold;">Reset Password Baru (Kosongkan jika tidak diubah)</label>
+            <input id="edit-akun-pass" type="text" class="swal2-input" style="margin:4px 0 12px 0; width:100%;" placeholder="Biarkan kosong jika tetap">
+            
+            <label style="font-weight:bold;">Hak Akses (Role)</label>
+            <select id="edit-akun-role" style="margin:4px 0 12px 0; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
+              <option value="GURU" ${akun.role === 'GURU' ? 'selected' : ''}>GURU (Hanya Upload & Cek Soal)</option>
+              <option value="ADMIN" ${akun.role === 'ADMIN' ? 'selected' : ''}>ADMIN (Akses Penuh Proktor)</option>
+            </select>
+            
+            <label style="font-weight:bold;">Status Akun</label>
+            <select id="edit-akun-status" style="margin:4px 0 4px 0; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
+              <option value="AKTIF" ${akun.status === 'AKTIF' ? 'selected' : ''}>AKTIF</option>
+              <option value="NONAKTIF" ${akun.status === 'NONAKTIF' ? 'selected' : ''}>NONAKTIF (Blokir Login)</option>
+            </select>
+          </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Simpan Perubahan',
+        cancelButtonText: 'Batal',
+        preConfirm: () => {
+          const username = document.getElementById('edit-akun-user').value.trim();
+          const nama = document.getElementById('edit-akun-nama').value.trim();
+          const passwordBaru = document.getElementById('edit-akun-pass').value.trim();
+          const roleBaru = document.getElementById('edit-akun-role').value;
+          const statusBaru = document.getElementById('edit-akun-status').value;
+
+          if (!username || !nama) {
+            Swal.showValidationMessage('Username dan Nama Lengkap wajib diisi!');
+            return false;
+          }
+          if (passwordBaru !== '' && passwordBaru.length < 5) {
+            Swal.showValidationMessage('Password baru minimal 5 karakter!');
+            return false;
+          }
+          return { username, nama, passwordBaru, roleBaru, statusBaru };
+        }
+      });
+
+      if (formValues) {
+        Swal.fire({ title: 'Menyimpan Perubahan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const res = await panggilGAS({
+          aksi: 'ADMIN_EDIT_AKUN',
+          baris: akun.baris,
+          ...formValues
+        });
+
+        if (res.status === 'success') {
+          if (akun.username.toLowerCase() === portalUserTersimpan.toLowerCase()) {
+            portalUserTersimpan = formValues.username;
+            if (formValues.passwordBaru) portalPassTersimpan = formValues.passwordBaru;
+          }
+          Swal.fire('Berhasil', res.pesan, 'success');
+          muatDataPortal();
+        } else {
+          Swal.fire('Gagal', res.pesan, 'error');
+        }
+      }
+    }
+
+    async function hapusAkunPortal(idx) {
+      const akun = daftarAkunGlobal[idx];
+      if (!akun) return;
+
+      const konfirm = await Swal.fire({
+        title: 'Hapus Akun Pengguna?',
+        html: `Akun atas nama <b>${akun.nama}</b> (@${akun.username}) akan dihapus permanen dari sistem.<br>Tindakan ini tidak dapat dibatalkan.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: 'Ya, Hapus Akun',
+        cancelButtonText: 'Batal'
+      });
+
+      if (!konfirm.isConfirmed) return;
+
+      Swal.fire({ title: 'Menghapus Akun...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const res = await panggilGAS({ aksi: 'ADMIN_HAPUS_AKUN', baris: akun.baris });
+      if (res.status === 'success') {
+        Swal.fire('Terhapus', res.pesan, 'success');
+        muatDataPortal();
+      } else {
+        Swal.fire('Gagal', res.pesan, 'error');
+      }
+    }
+
     // --- TEMPLATE EXCEL DENGAN CONTOH LENGKAP MEDIA (GAMBAR, AUDIO, VIDEO) ---
     function downloadTemplateExcel() {
       const dataContoh = [
         ["No", "Tipe", "Pertanyaan", "OpsiA", "OpsiB", "OpsiC", "OpsiD", "OpsiE", "Kunci"],
-        [
-          1,
-          "PG",
-          "Ibu kota Provinsi Jawa Timur adalah...",
-          "Malang",
-          "Kediri",
-          "Surabaya",
-          "Madiun",
-          "Blitar",
-          "C"
-        ],
-        [
-          2,
-          "PGK",
-          "Manakah perangkat keras input komputer? (Pilih lebih dari 1)",
-          "Keyboard",
-          "Monitor",
-          "Mouse",
-          "Printer",
-          "Scanner",
-          "A,C,E"
-        ],
-        [
-          3,
-          "BS",
-          "Tentukan Benar atau Salah pernyataan berikut:",
-          "Kabel UTP digunakan untuk jaringan LAN",
-          "IPv4 terdiri dari 64 bit",
-          "Router menghubungkan dua jaringan berbeda",
-          "",
-          "",
-          "B,S,B"
-        ],
-        [
-          4,
-          "PG",
-          "Perhatikan gambar topologi berikut! [IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_SOAL/view?usp=sharing] Perangkat yang berada di tengah adalah...",
-          "Hub",
-          "Switch",
-          "Router",
-          "Access Point",
-          "Modem",
-          "B"
-        ],
-        [
-          5,
-          "PG",
-          "Manakah simbol komponen resistor tetap pada pilihan di bawah ini?",
-          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_A/view?usp=sharing]",
-          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_B/view?usp=sharing]",
-          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_C/view?usp=sharing]",
-          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_D/view?usp=sharing]",
-          "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_E/view?usp=sharing]",
-          "A"
-        ],
-        [
-          6,
-          "PG",
-          "Dengarkan audio percakapan berikut! [AUDIO:https://drive.google.com/file/d/GANTI_ID_FILE_MP3/view?usp=sharing] Di manakah percakapan tersebut terjadi? (Untuk video gunakan format [VIDEO:https://drive.google.com/file/d/GANTI_ID_FILE_MP4/view?usp=sharing])",
-          "Perpustakaan",
-          "Kantin Sekolah",
-          "Laboratorium Komputer",
-          "Ruang Guru",
-          "Bengkel Otomotif",
-          "C"
-        ]
+        [1, "PG", "Ibu kota Provinsi Jawa Timur adalah...", "Malang", "Kediri", "Surabaya", "Madiun", "Blitar", "C"],
+        [2, "PGK", "Manakah perangkat keras input komputer? (Pilih lebih dari 1)", "Keyboard", "Monitor", "Mouse", "Printer", "Scanner", "A,C,E"],
+        [3, "BS", "Tentukan Benar atau Salah pernyataan berikut:", "Kabel UTP digunakan untuk jaringan LAN", "IPv4 terdiri dari 64 bit", "Router menghubungkan dua jaringan berbeda", "", "", "B,S,B"],
+        [4, "PG", "Perhatikan gambar topologi berikut! [IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_SOAL/view?usp=sharing] Perangkat yang berada di tengah adalah...", "Hub", "Switch", "Router", "Access Point", "Modem", "B"],
+        [5, "PG", "Manakah simbol komponen resistor tetap pada pilihan di bawah ini?", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_A/view?usp=sharing]", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_B/view?usp=sharing]", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_C/view?usp=sharing]", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_D/view?usp=sharing]", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_E/view?usp=sharing]", "A"],
+        [6, "PG", "Dengarkan audio percakapan berikut! [AUDIO:https://drive.google.com/file/d/GANTI_ID_FILE_MP3/view?usp=sharing] Di manakah percakapan tersebut terjadi? (Untuk video gunakan format [VIDEO:https://drive.google.com/file/d/GANTI_ID_FILE_MP4/view?usp=sharing])", "Perpustakaan", "Kantin Sekolah", "Laboratorium Komputer", "Ruang Guru", "Bengkel Otomotif", "C"]
       ];
 
       const ws = XLSX.utils.aoa_to_sheet(dataContoh);
       ws['!cols'] = [
-        { wch: 5 },
-        { wch: 8 },
-        { wch: 55 },
-        { wch: 32 },
-        { wch: 32 },
-        { wch: 32 },
-        { wch: 32 },
-        { wch: 32 },
+        { wch: 5 }, { wch: 8 }, { wch: 55 },
+        { wch: 32 }, { wch: 32 }, { wch: 32 }, { wch: 32 }, { wch: 32 },
         { wch: 10 }
       ];
 
