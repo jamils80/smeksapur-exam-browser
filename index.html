@@ -84,17 +84,18 @@
     .kop-teks .baris-2 { font-size: 13px; font-weight: 700; letter-spacing: 0.4px; }
     .kop-teks .baris-3 { font-size: 16px; font-weight: 800; color: #1e3a8a; margin-top: 2px; }
 
-    input[type="text"], input[type="password"] {
+    input[type="text"], input[type="password"], select {
       padding: 13px 15px;
-      margin: 8px 0;
+      margin: 7px 0;
       width: 100%;
       border-radius: 8px;
       border: 1.5px solid #cbd5e1;
-      font-size: 15px;
+      font-size: 14px;
+      background-color: #ffffff;
       transition: all 0.3s ease;
     }
 
-    input[type="text"]:focus, input[type="password"]:focus {
+    input[type="text"]:focus, input[type="password"]:focus, select:focus {
       outline: none;
       border-color: #2563eb;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
@@ -129,7 +130,7 @@
       margin-bottom: 16px;
     }
 
-    .info-teks { font-weight: bold; color: #1e3a8a; font-size: 14px; }
+    .info-teks { font-weight: bold; color: #1e3a8a; font-size: 13.5px; line-height: 1.4; }
 
     .btn-toggle-nav {
       background: #1e3a8a;
@@ -303,7 +304,7 @@
   <div class="bg-animated"></div>
   <div class="bg-overlay"></div>
 
-  <!-- 1. FORM LOGIN -->
+  <!-- 1. FORM LOGIN MULTI-MAPEL -->
   <div id="halaman-login" class="box">
     <div class="kop-header">
       <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" alt="Logo SMK Negeri 1 Purwoasri" class="kop-logo">
@@ -314,13 +315,17 @@
       </div>
     </div>
 
-    <div style="text-align: center; margin-bottom: 15px;">
+    <div style="text-align: center; margin-bottom: 14px;">
       <h3 style="margin: 0 0 4px 0; color: #1e293b;">Portal Ujian Online</h3>
-      <span style="color: #64748b; font-size: 13px;">Silakan masuk menggunakan akun peserta Anda</span>
+      <span style="color: #64748b; font-size: 13px;">Pilih mata pelajaran aktif dan masuk menggunakan akun peserta</span>
     </div>
 
-    <input type="text" id="userId" placeholder="Masukkan User ID">
+    <select id="pilihMapel">
+      <option value="">Memuat daftar mata pelajaran...</option>
+    </select>
+    <input type="text" id="userId" placeholder="Masukkan User ID / NIS">
     <input type="password" id="password" placeholder="Masukkan Password">
+    <input type="text" id="tokenUjian" placeholder="Masukkan Token Ujian dari Pengawas" style="text-transform:uppercase;">
     <button class="btn-utama" onclick="mulaiLogin()">Masuk & Mulai Ujian (Fullscreen)</button>
   </div>
 
@@ -367,10 +372,10 @@
   </div>
 
   <script>
-    // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwMuxMhxJ8DVJoHpAiZb0t8zaViGe6k7smeqgO99toHj7S6Me17LW2djpd5qI1rBnh-Sw/exec";
     
     let userAktif = "";
+    let mapelAktif = "";
     let daftarSoalGlobal = [];
     let jawabanTersimpan = {};
     let indexSoalAktif = 0;
@@ -381,6 +386,26 @@
     let intervalPengawas = null;
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // Muat daftar mata pelajaran aktif saat halaman login dibuka
+    window.addEventListener("DOMContentLoaded", () => {
+      muatDaftarMapel();
+    });
+
+    async function muatDaftarMapel() {
+      const selectEl = document.getElementById("pilihMapel");
+      try {
+        const res = await panggilGAS({ aksi: "GET_MAPEL_AKTIF" });
+        if (res.status === "success" && res.mapel.length > 0) {
+          selectEl.innerHTML = `<option value="">-- Pilih Mata Pelajaran Ujian --</option>` +
+            res.mapel.map(m => `<option value="${m.kode}">${m.nama} (${m.mulai} s/d ${m.selesai})</option>`).join('');
+        } else {
+          selectEl.innerHTML = `<option value="">Tidak ada jadwal ujian aktif saat ini</option>`;
+        }
+      } catch (e) {
+        selectEl.innerHTML = `<option value="">Gagal memuat jadwal ujian (Periksa koneksi)</option>`;
+      }
+    }
 
     function formatKontenMedia(teksRaw) {
       if (!teksRaw) return "";
@@ -438,17 +463,14 @@
       hentikanPengawasanAktif();
       ujianBerjalan = true;
 
-      // Heartbeat check setiap 400ms: memastikan mode fullscreen & visibilitas selalu terjaga
       intervalPengawas = setInterval(() => {
         if (!ujianBerjalan || sedangProsesLogout) return;
 
-        // Cek 1: Jika tab disembunyikan / pindah aplikasi
         if (document.hidden) {
           tanganiPelanggaran("Berpindah tab atau membuka aplikasi lain");
           return;
         }
 
-        // Cek 2: Jika keluar dari Fullscreen (baik klik tombol X atas, ESC, maupun F11)
         if (!isMobile && !document.fullscreenElement) {
           tanganiPelanggaran("Keluar dari mode Fullscreen");
           return;
@@ -469,29 +491,31 @@
     }
 
     async function mulaiLogin() {
+      const kodeMapel = document.getElementById("pilihMapel").value.trim();
       const userId = document.getElementById("userId").value.trim();
       const password = document.getElementById("password").value.trim();
+      const tokenInput = document.getElementById("tokenUjian").value.trim();
 
-      if (!userId || !password) {
-        Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Silakan isi User ID dan Password terlebih dahulu!' });
+      if (!kodeMapel || !userId || !password || !tokenInput) {
+        Swal.fire({ icon: 'warning', title: 'Data Belum Lengkap', text: 'Silakan pilih Mata Pelajaran, isi User ID, Password, dan Token Ujian!' });
         return;
       }
 
-      // Masuk fullscreen langsung saat klik tombol login (masih dalam user gesture)
       await masukFullscreenAman();
 
-      Swal.fire({ title: 'Memverifikasi Akun...', text: 'Mohon tunggu sebentar', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+      Swal.fire({ title: 'Memverifikasi Sesi Ujian...', text: 'Mohon tunggu sebentar', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
       try {
-        const hasil = await panggilGAS({ aksi: "LOGIN", userId, password });
+        const hasil = await panggilGAS({ aksi: "LOGIN_SISWA", userId, password, kodeMapel, tokenInput });
         if (hasil.status !== "success") {
-          Swal.fire({ icon: 'error', title: 'Login Gagal', text: hasil.pesan });
+          Swal.fire({ icon: 'error', title: 'Login Ditolak', text: hasil.pesan });
           return;
         }
 
         Swal.close();
 
-        userAktif = userId;
+        userAktif = hasil.peserta.userId;
+        mapelAktif = hasil.mapel.kode;
         daftarSoalGlobal = hasil.soal;
         jawabanTersimpan = hasil.draftJawaban || {};
         indexSoalAktif = 0;
@@ -504,18 +528,17 @@
         document.getElementById("btn-toggle-nav").innerText = "☰ Daftar Soal";
         
         const infoPeringatan = jumlahPelanggaranSaatIni > 0 
-          ? ` | <span style="color:#dc2626;">Pelanggaran: ${jumlahPelanggaranSaatIni}x</span>` 
+          ? `<br><span style="color:#dc2626;">Peringatan: Pelanggaran ${jumlahPelanggaranSaatIni}x (Pelanggaran berikutnya akan menghapus jawaban & mengunci akun!)</span>` 
           : '';
-        document.getElementById("info-peserta").innerHTML = `${hasil.nama} (${userId})${infoPeringatan}`;
+        document.getElementById("info-peserta").innerHTML = `${hasil.peserta.nama} (${hasil.peserta.kelas}) — <b>${hasil.mapel.nama}</b>${infoPeringatan}`;
 
         tampilkanSoal(0);
 
         if (hasil.draftJawaban && Object.keys(hasil.draftJawaban).length > 0) {
-          // Tampilkan info pemulihan dulu, baru nyalakan sensor pengawas setelah siswa klik "Lanjutkan Ujian"
           await Swal.fire({
             icon: 'info',
             title: 'Jawaban Sebelumnya Dipulihkan',
-            text: 'Jawaban Anda sebelum logout pelanggaran pertama telah dimuat kembali. Jangan tinggalkan halaman ujian atau keluar dari Fullscreen lagi karena seluruh jawaban akan DIHAPUS!',
+            text: 'Jawaban Anda sebelum logout pelanggaran pertama telah dimuat kembali. Jangan tinggalkan halaman ujian atau keluar dari Fullscreen lagi karena jawaban akan dihapus dan akun terkunci!',
             confirmButtonText: 'Lanjutkan Ujian',
             allowOutsideClick: false
           });
@@ -524,7 +547,6 @@
           await masukFullscreenAman();
         }
 
-        // Beri jeda 500ms setelah masuk fullscreen agar stabil, lalu aktifkan sensor pengawas
         setTimeout(() => {
           mulaiPengawasanAktif();
         }, 500);
@@ -703,6 +725,7 @@
     function kembaliKeHalamanLogin() {
       hentikanPengawasanAktif();
       userAktif = "";
+      mapelAktif = "";
       daftarSoalGlobal = [];
       jawabanTersimpan = {};
       
@@ -732,6 +755,7 @@
       }
       const jawabanSekarang = pelanggaranKe === 1 ? { ...jawabanTersimpan } : {};
       const idPelanggar = userAktif;
+      const kodeMapelPelanggar = mapelAktif;
 
       kembaliKeHalamanLogin();
 
@@ -740,7 +764,7 @@
           Swal.fire({
             icon: 'warning',
             title: 'PERINGATAN PELANGGARAN KE-1!',
-            html: `Anda terdeteksi: <b>${alasan}</b>.<br><br>Sesi Anda telah dikeluarkan otomatis ke halaman login, namun <b>jawaban Anda MASIH TERSIMPAN</b>.<br>Silakan login kembali. <b>Jika melanggar ke-2 kalinya, seluruh jawaban Anda akan DIHAPUS!</b>`,
+            html: `Anda terdeteksi: <b>${alasan}</b>.<br><br>Sesi Anda telah dikeluarkan otomatis ke halaman login, namun <b>jawaban Anda MASIH TERSIMPAN</b>.<br>Silakan login kembali. <b>Jika melanggar ke-2 kalinya, seluruh jawaban Anda akan DIHAPUS dan akun TERKUNCI!</b>`,
             confirmButtonText: 'Mengerti',
             confirmButtonColor: '#d97706',
             allowOutsideClick: false
@@ -748,9 +772,9 @@
         } else {
           Swal.fire({
             icon: 'error',
-            title: 'PELANGGARAN KE-' + pelanggaranKe + '!',
-            html: `Anda kembali terdeteksi: <b>${alasan}</b>.<br><br>Sesi Anda dikeluarkan otomatis ke halaman login dan <b>SELURUH JAWABAN ANDA TELAH DIHAPUS!</b>`,
-            confirmButtonText: 'Login Ulang',
+            title: 'PELANGGARAN KE-' + pelanggaranKe + ' (AKUN TERKUNCI)!',
+            html: `Anda kembali terdeteksi: <b>${alasan}</b>.<br><br><b>SELURUH JAWABAN ANDA TELAH DIHAPUS</b> dan akun ujian Anda telah <b>DIKUNCI</b>.<br>Silakan melapor ke Proktor / Pengawas ruang untuk membuka kunci akun Anda.`,
+            confirmButtonText: 'Tutup',
             confirmButtonColor: '#dc2626',
             allowOutsideClick: false
           });
@@ -761,6 +785,7 @@
         await panggilGAS({
           aksi: "PELANGGARAN",
           userId: idPelanggar,
+          kodeMapel: kodeMapelPelanggar,
           keterangan: alasan,
           jawaban: jawabanSekarang
         });
@@ -771,7 +796,6 @@
       }
     }
 
-    // Event listener tambahan untuk deteksi instan
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && ujianBerjalan) {
         tanganiPelanggaran("Berpindah tab, membuka aplikasi lain, atau layar terbagi");
@@ -832,7 +856,7 @@
       hentikanPengawasanAktif();
       Swal.fire({ title: 'Menyimpan & Mengoreksi Jawaban...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
-      const hasil = await panggilGAS({ aksi: "SUBMIT", userId: userAktif, jawaban: jawabanTersimpan });
+      const hasil = await panggilGAS({ aksi: "SUBMIT", userId: userAktif, kodeMapel: mapelAktif, jawaban: jawabanTersimpan });
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
       Swal.fire({
@@ -847,6 +871,7 @@
           <h2>Ujian Telah Selesai</h2>
           <p style="color:#475569;">Terima kasih telah mengikuti ujian dengan jujur.</p>
           <p style="font-size: 22px; margin-top: 20px;">Skor Akhir Anda: <b style="color:#16a34a;">${hasil.skor}</b></p>
+          <button class="btn-utama" style="max-width:240px; margin-top:20px;" onclick="location.reload()">Kembali ke Halaman Login</button>
         </div>
       `;
     }
