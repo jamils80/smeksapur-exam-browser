@@ -387,7 +387,6 @@
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    // Muat daftar mata pelajaran aktif saat halaman login dibuka
     window.addEventListener("DOMContentLoaded", () => {
       muatDaftarMapel();
     });
@@ -405,6 +404,62 @@
       } catch (e) {
         selectEl.innerHTML = `<option value="">Gagal memuat jadwal ujian (Periksa koneksi)</option>`;
       }
+    }
+
+    // --- PENGACAK DETERMINISTIK BERBASIS SEED (KONSISTEN PER SISWA & MAPEL) ---
+    function buatGeneratorAcak(seedText) {
+      let h = 2166136261 >>> 0;
+      for (let i = 0; i < seedText.length; i++) {
+        h ^= seedText.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return function() {
+        h += h << 13; h ^= h >>> 7;
+        h += h << 3;  h ^= h >>> 17;
+        h += h << 5;
+        return (h >>> 0) / 4294967296;
+      };
+    }
+
+    function acakArrayDenganSeed(arr, rng) {
+      const salinan = [...arr];
+      for (let i = salinan.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [salinan[i], salinan[j]] = [salinan[j], salinan[i]];
+      }
+      return salinan;
+    }
+
+    function siapkanSoalDanOpsiAcak(soalMentah, userId, kodeMapel) {
+      const rng = buatGeneratorAcak(`${userId}_${kodeMapel}`);
+      // 1. Acak urutan soal
+      const soalTeracak = acakArrayDenganSeed(soalMentah, rng);
+      const hurufOpsi = ['a', 'b', 'c', 'd', 'e'];
+
+      return soalTeracak.map((s, idx) => {
+        const tipe = (s.tipe || 'PG').toUpperCase();
+        // Kumpulkan opsi yang terisi
+        const daftarOpsi = [];
+        hurufOpsi.forEach(h => {
+          if (s[h] !== undefined && s[h] !== null && String(s[h]).trim() !== "") {
+            daftarOpsi.push({
+              kodeAsli: h.toUpperCase(), // Tetap simpan A/B/C/D/E asli untuk pencocokan kunci
+              teks: s[h]
+            });
+          }
+        });
+
+        // 2. Acak urutan pilihan jawaban hanya untuk PG dan PGK (BS tetap urut)
+        const opsiFinal = (tipe === 'PG' || tipe === 'PGK')
+          ? acakArrayDenganSeed(daftarOpsi, rng)
+          : daftarOpsi;
+
+        return {
+          ...s,
+          nomorTampil: idx + 1, // Nomor urut tampilan 1, 2, 3...
+          opsiTeracak: opsiFinal
+        };
+      });
     }
 
     function formatKontenMedia(teksRaw) {
@@ -516,7 +571,8 @@
 
         userAktif = hasil.peserta.userId;
         mapelAktif = hasil.mapel.kode;
-        daftarSoalGlobal = hasil.soal;
+        // Acak urutan soal & pilihan jawaban secara konsisten untuk peserta ini
+        daftarSoalGlobal = siapkanSoalDanOpsiAcak(hasil.soal, userAktif, mapelAktif);
         jawabanTersimpan = hasil.draftJawaban || {};
         indexSoalAktif = 0;
         jumlahPelanggaranSaatIni = hasil.pelanggaran || 0;
@@ -580,7 +636,7 @@
         } else if (sudahDijawab) {
           kelas += " terjawab";
         }
-        return `<button type="button" class="${kelas}" onclick="lompatKeSoal(${idx})">${s.no}</button>`;
+        return `<button type="button" class="${kelas}" onclick="lompatKeSoal(${idx})">${s.nomorTampil}</button>`;
       }).join('');
     }
 
@@ -597,7 +653,6 @@
       if (!daftarSoalGlobal.length) return;
       const s = daftarSoalGlobal[indexSoalAktif];
       const tipe = s.tipe || 'PG';
-      const hurufOpsi = ['a', 'b', 'c', 'd', 'e'];
 
       if (tipe === 'PG') {
         const terpilih = document.querySelector(`input[name="soal_${s.no}"]:checked`);
@@ -609,11 +664,9 @@
       } 
       else if (tipe === 'BS') {
         const hasilBS = [];
-        hurufOpsi.forEach((h, idx) => {
-          if (s[h]) {
-            const terpilih = document.querySelector(`input[name="soal_${s.no}_item_${idx}"]:checked`);
-            hasilBS.push(terpilih ? terpilih.value : "-");
-          }
+        s.opsiTeracak.forEach((_, idx) => {
+          const terpilih = document.querySelector(`input[name="soal_${s.no}_item_${idx}"]:checked`);
+          hasilBS.push(terpilih ? terpilih.value : "-");
         });
         jawabanTersimpan[s.no] = hasilBS.join(',');
       }
@@ -637,7 +690,7 @@
       const s = daftarSoalGlobal[idx];
       const totalSoal = daftarSoalGlobal.length;
       const tipe = s.tipe || 'PG';
-      const hurufOpsi = ['a', 'b', 'c', 'd', 'e'];
+      const labelAbjad = ['A', 'B', 'C', 'D', 'E'];
       const nilaiTersimpan = jawabanTersimpan[s.no] || "";
 
       let kontenOpsi = '';
@@ -645,41 +698,38 @@
 
       if (tipe === 'PG') {
         badgeHTML = `<span class="badge-tipe badge-pg">Pilihan Ganda (Pilih 1)</span>`;
-        kontenOpsi = hurufOpsi.map(h => {
-          if (!s[h]) return '';
-          const H = h.toUpperCase();
-          const checked = (nilaiTersimpan === H) ? 'checked' : '';
+        kontenOpsi = s.opsiTeracak.map((opsi, i) => {
+          const hurufTampil = labelAbjad[i] || opsi.kodeAsli;
+          const checked = (nilaiTersimpan === opsi.kodeAsli) ? 'checked' : '';
           return `
             <label class="opsi-label">
-              <input type="radio" name="soal_${s.no}" value="${H}" ${checked} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();">
-              <div class="opsi-konten"><b>${H}.</b> ${formatKontenMedia(s[h])}</div>
+              <input type="radio" name="soal_${s.no}" value="${opsi.kodeAsli}" ${checked} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();">
+              <div class="opsi-konten"><b>${hurufTampil}.</b> ${formatKontenMedia(opsi.teks)}</div>
             </label>`;
         }).join('');
       } 
       else if (tipe === 'PGK') {
         badgeHTML = `<span class="badge-tipe badge-pgk">Pilihan Ganda Kompleks (Lebih Dari 1)</span>`;
         const arrayTerpilih = nilaiTersimpan.split(',');
-        kontenOpsi = hurufOpsi.map(h => {
-          if (!s[h]) return '';
-          const H = h.toUpperCase();
-          const checked = arrayTerpilih.includes(H) ? 'checked' : '';
+        kontenOpsi = s.opsiTeracak.map((opsi, i) => {
+          const hurufTampil = labelAbjad[i] || opsi.kodeAsli;
+          const checked = arrayTerpilih.includes(opsi.kodeAsli) ? 'checked' : '';
           return `
             <label class="opsi-label">
-              <input type="checkbox" name="soal_${s.no}" value="${H}" ${checked} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();">
-              <div class="opsi-konten"><b>${H}.</b> ${formatKontenMedia(s[h])}</div>
+              <input type="checkbox" name="soal_${s.no}" value="${opsi.kodeAsli}" ${checked} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();">
+              <div class="opsi-konten"><b>${hurufTampil}.</b> ${formatKontenMedia(opsi.teks)}</div>
             </label>`;
         }).join('');
       } 
       else if (tipe === 'BS') {
         badgeHTML = `<span class="badge-tipe badge-bs">Pilihan Ganda Kompleks (Benar / Salah)</span>`;
         const arrayBS = nilaiTersimpan.split(',');
-        const barisPernyataan = hurufOpsi.map((h, i) => {
-          if (!s[h]) return '';
+        const barisPernyataan = s.opsiTeracak.map((opsi, i) => {
           const cekB = (arrayBS[i] === 'B') ? 'checked' : '';
           const cekS = (arrayBS[i] === 'S') ? 'checked' : '';
           return `
             <tr>
-              <td>${formatKontenMedia(s[h])}</td>
+              <td>${formatKontenMedia(opsi.teks)}</td>
               <td class="tengah"><input type="radio" name="soal_${s.no}_item_${i}" value="B" ${cekB} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();"></td>
               <td class="tengah"><input type="radio" name="soal_${s.no}_item_${i}" value="S" ${cekS} onchange="simpanJawabanSoalAktif(); renderGridNavigasi();"></td>
             </tr>`;
@@ -700,11 +750,11 @@
 
       document.getElementById("wadah-soal").innerHTML = `
         <div class="header-nomor-soal">
-          <span class="nomor-besar">Soal No. ${s.no} dari ${totalSoal}</span>
+          <span class="nomor-besar">Soal No. ${s.nomorTampil} dari ${totalSoal}</span>
           ${badgeHTML}
         </div>
         <div style="font-size:16px; color:#0f172a; line-height:1.55; margin-bottom:14px;">
-          <b>${s.no}.</b> ${formatKontenMedia(s.tanya)}
+          <b>${s.nomorTampil}.</b> ${formatKontenMedia(s.tanya)}
         </div>
         ${kontenOpsi}
       `;
