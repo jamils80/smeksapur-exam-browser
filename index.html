@@ -485,16 +485,12 @@
 
         Swal.close();
 
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen().catch(() => {});
-        }
-
+        // 1. Set data sesi terlebih dahulu
         userAktif = userId;
         daftarSoalGlobal = hasil.soal;
         jawabanTersimpan = hasil.draftJawaban || {};
         indexSoalAktif = 0;
         jumlahPelanggaranSaatIni = hasil.pelanggaran || 0;
-        ujianBerjalan = true;
         sedangProsesLogout = false;
 
         document.getElementById("halaman-login").style.display = "none";
@@ -509,12 +505,27 @@
 
         tampilkanSoal(0);
 
+        // 2. Masuk ke Fullscreen terlebih dahulu baru aktifkan sensor ujianBerjalan
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen().catch(() => {});
+        }
+
+        // Beri jeda 300ms agar transisi fullscreen selesai, lalu aktifkan pemantauan penuh
+        setTimeout(() => {
+          ujianBerjalan = true;
+        }, 300);
+
         if (hasil.draftJawaban && Object.keys(hasil.draftJawaban).length > 0) {
           Swal.fire({
             icon: 'info',
             title: 'Jawaban Sebelumnya Dipulihkan',
             text: 'Jawaban Anda sebelum logout pelanggaran pertama telah dimuat kembali. Jangan tinggalkan halaman ujian lagi karena jawaban akan dihapus permanen!',
             confirmButtonText: 'Lanjutkan Ujian'
+          }).then(() => {
+            // Pastikan kembali ke fullscreen setelah klik tombol Lanjutkan Ujian
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+              document.documentElement.requestFullscreen().catch(() => {});
+            }
           });
         }
 
