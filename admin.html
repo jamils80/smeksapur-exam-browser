@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Admin & Proktor - SMK Negeri 1 Purwoasri</title>
+  <title>Portal Manajemen Ujian - SMK Negeri 1 Purwoasri</title>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
@@ -18,7 +18,7 @@
     }
 
     .container {
-      max-width: 1120px;
+      max-width: 1140px;
       margin: 0 auto;
       background: #ffffff;
       border-radius: 16px;
@@ -42,9 +42,21 @@
     .kop-teks .b2 { font-size: 13px; font-weight: 700; }
     .kop-teks .b3 { font-size: 17px; font-weight: 800; color: #1e3a8a; }
 
-    #login-admin {
+    .badge-role {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .role-admin { background: #dbeafe; color: #1e40af; }
+    .role-guru { background: #dcfce7; color: #166534; }
+
+    #login-portal {
       max-width: 420px;
-      margin: 80px auto;
+      margin: 70px auto;
       background: white;
       padding: 30px;
       border-radius: 16px;
@@ -62,7 +74,7 @@
     input:focus, select:focus { outline: none; border-color: #2563eb; }
 
     .btn {
-      padding: 10px 16px;
+      padding: 10px 15px;
       border: none;
       border-radius: 8px;
       font-weight: 700;
@@ -91,14 +103,14 @@
       flex-wrap: wrap;
     }
     .tab-btn {
-      padding: 11px 18px;
+      padding: 11px 16px;
       background: #f1f5f9;
       border: none;
       border-radius: 8px 8px 0 0;
       font-weight: 700;
       color: #475569;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13.5px;
     }
     .tab-btn.active { background: #2563eb; color: white; }
 
@@ -125,7 +137,7 @@
 
     .table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 10px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { padding: 11px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
     th { background: #f1f5f9; font-weight: 700; color: #1e293b; }
     tr:hover { background: #f8fafc; }
 
@@ -149,41 +161,45 @@
 </head>
 <body>
 
-  <!-- LOGIN ADMIN -->
-  <div id="login-admin">
+  <!-- LOGIN PORTAL (USERNAME + PASSWORD) -->
+  <div id="login-portal">
     <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" style="width:68px; margin-bottom:10px;">
-    <h2 style="margin:0 0 6px 0; color:#1e3a8a;">Panel Admin & Proktor</h2>
-    <p style="color:#64748b; font-size:13px; margin-bottom:20px;">SMK Negeri 1 Purwoasri</p>
-    <input type="password" id="adminPassInput" placeholder="Masukkan Password Admin / Proktor" onkeyup="if(event.key==='Enter') loginAdmin()">
-    <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:14px; padding:12px;" onclick="loginAdmin()">Masuk ke Dashboard</button>
+    <h2 style="margin:0 0 6px 0; color:#1e3a8a;">Portal Manajemen Ujian</h2>
+    <p style="color:#64748b; font-size:13px; margin-bottom:18px;">SMK Negeri 1 Purwoasri<br>(Admin / Proktor / Guru Mata Pelajaran)</p>
+    <input type="text" id="portalUserInput" placeholder="Username (contoh: admin atau guru)" style="margin-bottom:10px;" onkeyup="if(event.key==='Enter') loginPortal()">
+    <input type="password" id="portalPassInput" placeholder="Password" onkeyup="if(event.key==='Enter') loginPortal()">
+    <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:14px; padding:12px;" onclick="loginPortal()">Masuk ke Portal</button>
   </div>
 
-  <!-- DASHBOARD UTAMA -->
-  <div id="dashboard-admin" class="container" style="display:none;">
+  <!-- DASHBOARD DINAMIS SESUAI ROLE -->
+  <div id="dashboard-portal" class="container" style="display:none;">
     <div class="kop-header">
       <div class="kop-kiri">
         <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" class="kop-logo">
         <div class="kop-teks">
           <div class="b1">PEMERINTAH PROVINSI JAWA TIMUR - DINAS PENDIDIKAN</div>
-          <div class="b3">SMK NEGERI 1 PURWOASRI</div>
-          <div class="b2" style="color:#64748b;">Sistem Manajemen Ujian Berbasis Komputer (CBT Proktor & Guru)</div>
+          <div class="b3">SMK NEGERI 1 PURWOASRI <span id="badge-hak-akses" class="badge-role"></span></div>
+          <div class="b2" style="color:#475569;" id="info-user-login"></div>
         </div>
       </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn btn-primary" onclick="muatDataDashboard()">↻ Refresh Data</button>
-        <button class="btn btn-secondary" onclick="logoutAdmin()">Keluar</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-warning" onclick="bukaModalGantiPassword()">🔑 Ubah Password</button>
+        <button class="btn btn-primary" onclick="muatDataPortal()">↻ Refresh</button>
+        <button class="btn btn-secondary" onclick="logoutPortal()">Keluar</button>
       </div>
     </div>
 
     <!-- MENU TABS -->
-    <div class="tabs">
-      <button class="tab-btn active" onclick="bukaTab('tab-monitoring', this)">1. Monitoring & Reset Proktor</button>
-      <button class="tab-btn" onclick="bukaTab('tab-jadwal', this)">2. Jadwal & Token Ujian</button>
-      <button class="tab-btn" onclick="bukaTab('tab-upload', this)">3. Upload Soal Guru (Excel/CSV)</button>
+    <div class="tabs" id="menu-tabs-bar">
+      <button class="tab-btn khusus-admin" id="btn-tab-monitoring" onclick="bukaTab('tab-monitoring', this)">Monitoring & Reset Peserta</button>
+      <button class="tab-btn khusus-admin" id="btn-tab-jadwal" onclick="bukaTab('tab-jadwal', this)">Jadwal & Token Ujian</button>
+      <button class="tab-btn akses-guru" id="btn-tab-upload" onclick="bukaTab('tab-upload', this)">Upload Soal (Excel/CSV)</button>
+      <button class="tab-btn akses-guru" id="btn-tab-cek-soal" onclick="bukaTab('tab-cek-soal', this)">Cek Bank Soal</button>
+      <button class="tab-btn khusus-admin" id="btn-tab-akun" onclick="bukaTab('tab-akun', this)">Kelola Akun Guru/Admin</button>
     </div>
 
-    <!-- TAB 1: MONITORING & RESET -->
-    <div id="tab-monitoring" class="tab-content active">
+    <!-- TAB 1: MONITORING & RESET (KHUSUS ADMIN) -->
+    <div id="tab-monitoring" class="tab-content khusus-admin">
       <div class="grid-stat">
         <div class="card-stat">
           <h4>Sedang Mengerjakan</h4>
@@ -233,8 +249,8 @@
       </div>
     </div>
 
-    <!-- TAB 2: JADWAL & TOKEN -->
-    <div id="tab-jadwal" class="tab-content">
+    <!-- TAB 2: JADWAL & TOKEN (KHUSUS ADMIN) -->
+    <div id="tab-jadwal" class="tab-content khusus-admin">
       <h3 style="margin-top:0;">Tambah / Edit Jadwal Mata Pelajaran</h3>
       <div class="form-grid">
         <input type="hidden" id="editBarisMapel">
@@ -283,7 +299,7 @@
               <th>Waktu Mulai</th>
               <th>Waktu Selesai</th>
               <th>Token</th>
-              <th>Jumlah Soal</th>
+              <th>Bank Soal</th>
               <th>Status</th>
               <th>Aksi</th>
             </tr>
@@ -293,16 +309,16 @@
       </div>
     </div>
 
-    <!-- TAB 3: UPLOAD SOAL GURU -->
-    <div id="tab-upload" class="tab-content">
+    <!-- TAB 3: UPLOAD SOAL (ADMIN & GURU) -->
+    <div id="tab-upload" class="tab-content akses-guru">
       <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:16px; border-radius:10px; margin-bottom:20px;">
-        <h3 style="margin:0 0 8px 0; color:#1e3a8a;">Panduan Upload Soal untuk Guru</h3>
-        <p style="margin:0 0 12px 0; font-size:13px; color:#334155;">
-          1. Unduh template file di bawah ini lalu buka menggunakan <b>Microsoft Excel</b>.<br>
-          2. Isi kolom <b>Tipe</b> dengan <code>PG</code> (Pilihan Ganda), <code>PGK</code> (Kompleks Multi-Jawaban), atau <code>BS</code> (Benar-Salah).<br>
-          3. Untuk menyisipkan media di pertanyaan atau pilihan jawaban, gunakan format: <code>[IMG:link_gdrive]</code>, <code>[AUDIO:link_gdrive]</code>, atau <code>[VIDEO:link_gdrive]</code>.
+        <h3 style="margin:0 0 8px 0; color:#1e3a8a;">Panduan Pengisian Template Soal</h3>
+        <p style="margin:0 0 12px 0; font-size:13px; color:#334155; line-height:1.5;">
+          1. Klik tombol <b>Download Template Soal (.xlsx)</b> di bawah ini lalu isi menggunakan Microsoft Excel.<br>
+          2. Kolom <b>Tipe</b> diisi: <code>PG</code> (Pilihan Ganda 1 jawaban), <code>PGK</code> (Kompleks lebih dari 1 jawaban, kunci dipisah koma misal <code>A,C</code>), atau <code>BS</code> (Benar-Salah, kunci misal <code>B,S,B</code>).<br>
+          3. Untuk menyisipkan <b>Gambar, Audio, atau Video</b> pada soal maupun opsi jawaban, tulis tag: <code>[IMG:link_gdrive]</code>, <code>[AUDIO:link_gdrive]</code>, atau <code>[VIDEO:link_gdrive]</code>.
         </p>
-        <button class="btn btn-success" onclick="downloadTemplateExcel()">📄 Download Template Soal (Excel/XLSX)</button>
+        <button class="btn btn-success" onclick="downloadTemplateExcel()">📄 Download Template Soal (.xlsx)</button>
       </div>
 
       <div class="form-grid">
@@ -315,20 +331,20 @@
           <input type="file" id="fileSoalInput" accept=".xlsx,.xls,.csv" onchange="bacaFileExcel(event)">
         </div>
         <div class="form-group">
-          <label>3. Mode Upload</label>
+          <label>3. Mode Penyimpanan</label>
           <select id="modeTimpaSoal">
-            <option value="true">Ganti / Timpa semua soal lama di mapel ini</option>
-            <option value="false">Tambahkan ke bawah soal yang sudah ada</option>
+            <option value="true">Timpa / Ganti seluruh soal lama di mapel ini</option>
+            <option value="false">Tambahkan di bawah soal yang sudah ada</option>
           </select>
         </div>
       </div>
 
       <div id="preview-upload-box" style="display:none; margin-top:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
           <h4 id="judul-preview" style="margin:0; color:#16a34a;"></h4>
-          <button class="btn btn-primary" onclick="kirimSoalKeServer()">🚀 Upload & Simpan ke Database Sekarang</button>
+          <button class="btn btn-primary" onclick="kirimSoalKeServer()">🚀 Upload & Simpan ke Server Sekarang</button>
         </div>
-        <div class="table-wrap" style="max-height:320px;">
+        <div class="table-wrap" style="max-height:360px;">
           <table>
             <thead>
               <tr>
@@ -348,19 +364,95 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 4: CEK BANK SOAL (ADMIN & GURU) -->
+    <div id="tab-cek-soal" class="tab-content akses-guru">
+      <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+        <select id="cekTargetMapel" style="max-width:340px;"></select>
+        <button class="btn btn-primary" onclick="muatSoalMapel()">🔍 Tampilkan Daftar Soal</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:50px;">No</th>
+              <th style="width:65px;">Tipe</th>
+              <th>Pertanyaan</th>
+              <th>Opsi A</th>
+              <th>Opsi B</th>
+              <th>Opsi C</th>
+              <th>Opsi D</th>
+              <th>Opsi E</th>
+              <th style="width:80px;">Kunci</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-cek-soal">
+            <tr><td colspan="9" style="text-align:center; color:#64748b;">Pilih mata pelajaran lalu klik "Tampilkan Daftar Soal"</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 5: KELOLA AKUN GURU & ADMIN (KHUSUS ADMIN) -->
+    <div id="tab-akun" class="tab-content khusus-admin">
+      <h3 style="margin-top:0;">Tambah Akun Guru / Proktor Baru</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Username Login</label>
+          <input type="text" id="newAkunUser" placeholder="contoh: budi.santoso">
+        </div>
+        <div class="form-group">
+          <label>Password Awal</label>
+          <input type="text" id="newAkunPass" placeholder="Minimal 5 karakter">
+        </div>
+        <div class="form-group">
+          <label>Nama Lengkap & Gelar</label>
+          <input type="text" id="newAkunNama" placeholder="Contoh: Drs. Budi Santoso">
+        </div>
+        <div class="form-group">
+          <label>Hak Akses (Role)</label>
+          <select id="newAkunRole">
+            <option value="GURU">GURU (Hanya Upload & Cek Soal)</option>
+            <option value="ADMIN">ADMIN (Akses Penuh Proktor)</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <button class="btn btn-primary" onclick="tambahAkunPortal()">➕ Tambah Akun Pengguna</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Nama Lengkap</th>
+              <th>Role / Hak Akses</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-akun"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwMuxMhxJ8DVJoHpAiZb0t8zaViGe6k7smeqgO99toHj7S6Me17LW2djpd5qI1rBnh-Sw/exec";
 
-    let adminPassTersimpan = "";
+    let portalUserTersimpan = "";
+    let portalPassTersimpan = "";
+    let roleAktif = "";
     let dataMapelGlobal = [];
     let dataSesiGlobal = [];
+    let daftarAkunGlobal = [];
     let jumlahSoalGlobal = {};
     let soalHasilParse = [];
 
     async function panggilGAS(payload) {
-      payload.adminPass = adminPassTersimpan;
+      payload.portalUser = portalUserTersimpan;
+      payload.portalPass = portalPassTersimpan;
       const res = await fetch(GAS_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -369,44 +461,113 @@
       return res.json();
     }
 
-    async function loginAdmin() {
-      const pass = document.getElementById("adminPassInput").value.trim();
-      if (!pass) return Swal.fire('Peringatan', 'Masukkan password admin!', 'warning');
-      adminPassTersimpan = pass;
-      await muatDataDashboard(true);
+    async function loginPortal() {
+      const user = document.getElementById("portalUserInput").value.trim();
+      const pass = document.getElementById("portalPassInput").value.trim();
+      if (!user || !pass) return Swal.fire('Peringatan', 'Masukkan Username dan Password!', 'warning');
+      portalUserTersimpan = user;
+      portalPassTersimpan = pass;
+      await muatDataPortal(true);
     }
 
-    function logoutAdmin() {
-      adminPassTersimpan = "";
-      document.getElementById("adminPassInput").value = "";
-      document.getElementById("dashboard-admin").style.display = "none";
-      document.getElementById("login-admin").style.display = "block";
+    function logoutPortal() {
+      portalUserTersimpan = "";
+      portalPassTersimpan = "";
+      roleAktif = "";
+      document.getElementById("portalPassInput").value = "";
+      document.getElementById("dashboard-portal").style.display = "none";
+      document.getElementById("login-portal").style.display = "block";
     }
 
-    async function muatDataDashboard(dariLogin = false) {
-      Swal.fire({ title: 'Memuat Data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    function terapkanHakAksesUI(userObj) {
+      roleAktif = userObj.role;
+      const badge = document.getElementById("badge-hak-akses");
+      const infoUser = document.getElementById("info-user-login");
+      infoUser.innerText = `Login sebagai: ${userObj.nama} (@${userObj.username})`;
+
+      if (roleAktif === 'ADMIN') {
+        badge.innerText = "ADMIN / PROKTOR";
+        badge.className = "badge-role role-admin";
+        document.querySelectorAll('.khusus-admin').forEach(el => {
+          if (el.classList.contains('tab-btn')) el.style.display = 'inline-block';
+        });
+        bukaTab('tab-monitoring', document.getElementById('btn-tab-monitoring'));
+      } else {
+        badge.innerText = "GURU MAPEL";
+        badge.className = "badge-role role-guru";
+        document.querySelectorAll('.khusus-admin').forEach(el => el.style.display = 'none');
+        bukaTab('tab-upload', document.getElementById('btn-tab-upload'));
+      }
+    }
+
+    async function muatDataPortal(dariLogin = false) {
+      Swal.fire({ title: 'Memuat Data Portal...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
-        const res = await panggilGAS({ aksi: 'ADMIN_DASHBOARD' });
+        const res = await panggilGAS({ aksi: 'PORTAL_INIT' });
         if (res.status !== 'success') {
-          Swal.fire('Akses Ditolak', res.pesan || 'Password salah', 'error');
+          Swal.fire('Akses Ditolak', res.pesan || 'Username atau Password salah', 'error');
           return;
         }
         Swal.close();
 
-        if (dariLogin) {
-          document.getElementById("login-admin").style.display = "none";
-          document.getElementById("dashboard-admin").style.display = "block";
-        }
-
         dataMapelGlobal = res.mapel;
-        dataSesiGlobal = res.sesi;
+        dataSesiGlobal = res.sesi || [];
+        daftarAkunGlobal = res.daftarAkun || [];
         jumlahSoalGlobal = res.jumlahSoal || {};
 
+        if (dariLogin) {
+          document.getElementById("login-portal").style.display = "none";
+          document.getElementById("dashboard-portal").style.display = "block";
+          terapkanHakAksesUI(res.user);
+        }
+
         isiDropdownMapel();
-        renderTabelSesi();
-        renderTabelMapel();
+        if (res.user.role === 'ADMIN') {
+          renderTabelSesi();
+          renderTabelMapel();
+          renderTabelAkun();
+        }
       } catch (err) {
         Swal.fire('Error', 'Gagal terhubung ke server GAS.', 'error');
+      }
+    }
+
+    // --- FITUR UBAH PASSWORD MANDIRI ---
+    async function bukaModalGantiPassword() {
+      const { value: formValues } = await Swal.fire({
+        title: 'Ubah Password Akun Anda',
+        html: `
+          <input id="swal-pass1" type="password" class="swal2-input" placeholder="Password Baru (Min. 5 karakter)">
+          <input id="swal-pass2" type="password" class="swal2-input" placeholder="Ulangi Password Baru">
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Simpan Password',
+        cancelButtonText: 'Batal',
+        preConfirm: () => {
+          const p1 = document.getElementById('swal-pass1').value.trim();
+          const p2 = document.getElementById('swal-pass2').value.trim();
+          if (p1.length < 5) {
+            Swal.showValidationMessage('Password minimal 5 karakter!');
+            return false;
+          }
+          if (p1 !== p2) {
+            Swal.showValidationMessage('Konfirmasi password tidak cocok!');
+            return false;
+          }
+          return p1;
+        }
+      });
+
+      if (formValues) {
+        Swal.fire({ title: 'Menyimpan Password...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const res = await panggilGAS({ aksi: 'PORTAL_GANTI_PASSWORD', passwordBaru: formValues });
+        if (res.status === 'success') {
+          portalPassTersimpan = formValues; // Perbarui password sesi aktif agar tidak ter-logout
+          Swal.fire('Berhasil!', res.pesan, 'success');
+        } else {
+          Swal.fire('Gagal', res.pesan, 'error');
+        }
       }
     }
 
@@ -414,21 +575,27 @@
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(idTab).classList.add('active');
-      btn.classList.add('active');
+      if (btn) btn.classList.add('active');
     }
 
     function isiDropdownMapel() {
-      const filterEl = document.getElementById("filterMapel");
-      const uploadEl = document.getElementById("uploadTargetMapel");
-      const valFilterLama = filterEl.value;
+      const opsiGuru = dataMapelGlobal.map(m =>
+        `<option value="${m.kode}">${m.kode} - ${m.nama} (${jumlahSoalGlobal[m.kode] || 0} soal)</option>`
+      ).join('');
 
-      filterEl.innerHTML = `<option value="">-- Semua Mata Pelajaran --</option>` +
-        dataMapelGlobal.map(m => `<option value="${m.kode}">${m.kode} - ${m.nama}</option>`).join('');
-      filterEl.value = valFilterLama;
+      document.getElementById("uploadTargetMapel").innerHTML = opsiGuru;
+      document.getElementById("cekTargetMapel").innerHTML = opsiGuru;
 
-      uploadEl.innerHTML = dataMapelGlobal.map(m => `<option value="${m.kode}">${m.kode} - ${m.nama}</option>`).join('');
+      if (roleAktif === 'ADMIN') {
+        const filterEl = document.getElementById("filterMapel");
+        const valFilterLama = filterEl.value;
+        filterEl.innerHTML = `<option value="">-- Semua Mata Pelajaran --</option>` +
+          dataMapelGlobal.map(m => `<option value="${m.kode}">${m.kode} - ${m.nama}</option>`).join('');
+        filterEl.value = valFilterLama;
+      }
     }
 
+    // --- FUNGSI KHUSUS ADMIN / PROKTOR ---
     function renderTabelSesi() {
       const fMapel = document.getElementById("filterMapel").value;
       const fStatus = document.getElementById("filterStatus").value;
@@ -490,7 +657,7 @@
       Swal.fire({ title: 'Memproses Reset...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       const res = await panggilGAS({ aksi: 'ADMIN_RESET_SESI', baris });
       Swal.fire('Berhasil', res.pesan, 'success');
-      muatDataDashboard();
+      muatDataPortal();
     }
 
     function eksporNilaiCSV() {
@@ -571,9 +738,44 @@
       const res = await panggilGAS(payload);
       Swal.fire('Tersimpan', res.pesan, 'success');
       resetFormMapel();
-      muatDataDashboard();
+      muatDataPortal();
     }
 
+    function renderTabelAkun() {
+      const tbody = document.getElementById("tbody-akun");
+      tbody.innerHTML = daftarAkunGlobal.map(a => `
+        <tr>
+          <td><b>${a.username}</b></td>
+          <td>${a.nama}</td>
+          <td><span class="badge ${a.role === 'ADMIN' ? 'role-admin' : 'role-guru'}">${a.role}</span></td>
+          <td>${a.status}</td>
+        </tr>`).join('');
+    }
+
+    async function tambahAkunPortal() {
+      const username = document.getElementById("newAkunUser").value.trim();
+      const password = document.getElementById("newAkunPass").value.trim();
+      const nama = document.getElementById("newAkunNama").value.trim();
+      const roleBaru = document.getElementById("newAkunRole").value;
+
+      if (!username || password.length < 5 || !nama) {
+        return Swal.fire('Data Kurang', 'Isi Username, Password (min. 5 karakter), dan Nama Lengkap!', 'warning');
+      }
+
+      Swal.fire({ title: 'Menyimpan Akun...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const res = await panggilGAS({ aksi: 'ADMIN_TAMBAH_AKUN', username, password, nama, roleBaru });
+      if (res.status === 'success') {
+        Swal.fire('Berhasil', res.pesan, 'success');
+        document.getElementById("newAkunUser").value = "";
+        document.getElementById("newAkunPass").value = "";
+        document.getElementById("newAkunNama").value = "";
+        muatDataPortal();
+      } else {
+        Swal.fire('Gagal', res.pesan, 'error');
+      }
+    }
+
+    // --- FUNGSI BANK SOAL (ADMIN & GURU) ---
     function downloadTemplateExcel() {
       const dataContoh = [
         ["No", "Tipe", "Pertanyaan", "OpsiA", "OpsiB", "OpsiC", "OpsiD", "OpsiE", "Kunci"],
@@ -638,7 +840,7 @@
 
       Swal.fire({ title: 'Mengunggah Soal...', text: 'Mohon tunggu sebentar', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       const res = await panggilGAS({
-        aksi: 'ADMIN_UPLOAD_SOAL',
+        aksi: 'PORTAL_UPLOAD_SOAL',
         kodeMapel,
         daftarSoal: soalHasilParse,
         timpaSoalLama
@@ -649,9 +851,36 @@
         document.getElementById("fileSoalInput").value = "";
         document.getElementById("preview-upload-box").style.display = "none";
         soalHasilParse = [];
-        muatDataDashboard();
+        muatDataPortal();
       } else {
         Swal.fire('Gagal', res.pesan, 'error');
+      }
+    }
+
+    async function muatSoalMapel() {
+      const kodeMapel = document.getElementById("cekTargetMapel").value;
+      if (!kodeMapel) return;
+
+      Swal.fire({ title: 'Mengambil Bank Soal...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const res = await panggilGAS({ aksi: 'PORTAL_LIHAT_SOAL', kodeMapel });
+      Swal.close();
+
+      const tbody = document.getElementById("tbody-cek-soal");
+      if (res.status === 'success' && res.soal.length > 0) {
+        tbody.innerHTML = res.soal.map(s => `
+          <tr>
+            <td>${s.no}</td>
+            <td><b>${s.tipe}</b></td>
+            <td>${s.tanya}</td>
+            <td>${s.a}</td>
+            <td>${s.b}</td>
+            <td>${s.c}</td>
+            <td>${s.d}</td>
+            <td>${s.e}</td>
+            <td><b>${s.kunci}</b></td>
+          </tr>`).join('');
+      } else {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#dc2626;">Belum ada soal tersimpan untuk mata pelajaran ini.</td></tr>`;
       }
     }
   </script>
