@@ -15,15 +15,60 @@
       background: #0f172a;
       color: #1e293b;
       min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .bg-animated {
+      position: fixed;
+      inset: -5%;
+      width: 110%;
+      height: 110%;
+      background-image: url('https://lh3.googleusercontent.com/d/1Vo2a5qqGEPQm3XzyB0-qZr9NdBvNtXGX');
+      background-size: cover;
+      background-position: center;
+      z-index: -3;
+      animation: kenBurnsDinamis 28s ease-in-out infinite alternate;
+    }
+
+    .bg-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      transition: background 1s ease;
+    }
+    .bg-overlay.mode-siang {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.42), rgba(30, 58, 138, 0.32));
+    }
+    .bg-overlay.mode-malam {
+      background: linear-gradient(135deg, rgba(6, 11, 25, 0.78), rgba(15, 23, 42, 0.68));
+    }
+
+    #canvas-partikel {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    @keyframes kenBurnsDinamis {
+      0% { transform: scale(1) translate(0px, 0px); }
+      50% { transform: scale(1.07) translate(-14px, -9px); }
+      100% { transform: scale(1.11) translate(14px, 9px); }
     }
 
     .container {
       max-width: 1140px;
       margin: 0 auto;
-      background: #ffffff;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
       border-radius: 16px;
       padding: 26px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.4);
+      position: relative;
+      z-index: 1;
     }
 
     .kop-header {
@@ -57,11 +102,15 @@
     #login-portal {
       max-width: 420px;
       margin: 70px auto;
-      background: white;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
       padding: 30px;
       border-radius: 16px;
       text-align: center;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.42);
+      position: relative;
+      z-index: 1;
     }
 
     input, select {
@@ -168,6 +217,10 @@
   </style>
 </head>
 <body>
+
+  <div class="bg-animated"></div>
+  <div id="bg-overlay" class="bg-overlay"></div>
+  <canvas id="canvas-partikel"></canvas>
 
   <!-- LOGIN PORTAL (USERNAME + PASSWORD) -->
   <div id="login-portal">
@@ -465,8 +518,112 @@
     let jumlahSoalGlobal = {};
     let soalHasilParse = [];
 
-    // Isi tanggal default hari ini ke datepicker jadwal
+    // --- ANIMASI PARTIKEL DINAMIS (SALJU PAGI/SIANG & KUNANG-KUNANG MALAM) ---
+    function inisialisasiAnimasiSuasana() {
+      const canvas = document.getElementById("canvas-partikel");
+      const overlay = document.getElementById("bg-overlay");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+
+      let lebar = canvas.width = window.innerWidth;
+      let tinggi = canvas.height = window.innerHeight;
+      window.addEventListener("resize", () => {
+        lebar = canvas.width = window.innerWidth;
+        tinggi = canvas.height = window.innerHeight;
+      });
+
+      const jam = new Date().getHours();
+      const isMalam = (jam >= 18 || jam < 5);
+
+      if (overlay) {
+        overlay.className = isMalam ? "bg-overlay mode-malam" : "bg-overlay mode-siang";
+      }
+
+      const jumlahPartikel = isMalam ? 42 : 70;
+      const partikel = [];
+
+      for (let i = 0; i < jumlahPartikel; i++) {
+        if (isMalam) {
+          partikel.push({
+            x: Math.random() * lebar,
+            y: Math.random() * tinggi,
+            r: Math.random() * 2.6 + 1.4,
+            vx: (Math.random() - 0.5) * 0.7,
+            vy: (Math.random() - 0.5) * 0.55,
+            fase: Math.random() * Math.PI * 2,
+            kecepatanKedip: 0.02 + Math.random() * 0.03
+          });
+        } else {
+          partikel.push({
+            x: Math.random() * lebar,
+            y: Math.random() * tinggi,
+            r: Math.random() * 3.2 + 1.2,
+            vy: Math.random() * 1.1 + 0.45,
+            ayun: Math.random() * Math.PI * 2,
+            kecepatanAyun: 0.01 + Math.random() * 0.02,
+            opacity: Math.random() * 0.55 + 0.35
+          });
+        }
+      }
+
+      function gambarFrame() {
+        ctx.clearRect(0, 0, lebar, tinggi);
+
+        if (isMalam) {
+          for (const p of partikel) {
+            p.x += p.vx + Math.sin(p.fase * 0.5) * 0.25;
+            p.y += p.vy + Math.cos(p.fase * 0.4) * 0.2;
+            p.fase += p.kecepatanKedip;
+
+            if (p.x < -20) p.x = lebar + 20;
+            if (p.x > lebar + 20) p.x = -20;
+            if (p.y < -20) p.y = tinggi + 20;
+            if (p.y > tinggi + 20) p.y = -20;
+
+            const cahaya = 0.25 + 0.75 * ((Math.sin(p.fase) + 1) / 2);
+            const radiusPendar = p.r * 5.5;
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radiusPendar);
+            grad.addColorStop(0, `rgba(254, 240, 138, ${cahaya})`);
+            grad.addColorStop(0.35, `rgba(190, 242, 100, ${cahaya * 0.55})`);
+            grad.addColorStop(1, "rgba(190, 242, 100, 0)");
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radiusPendar, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          for (const p of partikel) {
+            p.y += p.vy;
+            p.ayun += p.kecepatanAyun;
+            p.x += Math.sin(p.ayun) * 0.65;
+
+            if (p.y > tinggi + 10) {
+              p.y = -10;
+              p.x = Math.random() * lebar;
+            }
+            if (p.x > lebar + 10) p.x = -10;
+            if (p.x < -10) p.x = lebar + 10;
+
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 1.8);
+            grad.addColorStop(0, `rgba(255, 255, 255, ${p.opacity})`);
+            grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * 1.8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        requestAnimationFrame(gambarFrame);
+      }
+
+      gambarFrame();
+    }
+
     window.addEventListener("DOMContentLoaded", () => {
+      inisialisasiAnimasiSuasana();
       const hariIni = new Date().toISOString().split('T')[0];
       document.getElementById("inMulaiTgl").value = hariIni;
       document.getElementById("inSelesaiTgl").value = hariIni;
@@ -723,7 +880,6 @@
         </tr>`).join('');
     }
 
-    // Memecah string "YYYY-MM-DD HH:mm" ke dalam Datepicker & Timepicker saat tombol Edit diklik
     function isiFormEditMapel(idx) {
       const m = dataMapelGlobal[idx];
       if (!m) return;
