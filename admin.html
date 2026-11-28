@@ -1205,19 +1205,22 @@
       }
     }
 
-    async function sisipMediaManual(jenis) {
+    async function sisipMediaManual(jenis, targetId = 'manTanya') {
       const labelJenis = jenis === 'IMG' ? 'Gambar' : (jenis === 'AUDIO' ? 'Audio (MP3)' : 'Video (MP4)');
+      const labelTarget = targetId === 'manTanya' ? 'Pertanyaan' : targetId.replace('manOpsi', 'Opsi ');
       const { value: url } = await Swal.fire({
-        title: `Sisipkan ${labelJenis} Google Drive`,
+        title: `Sisipkan ${labelJenis} ke ${labelTarget}`,
         input: 'url',
         inputLabel: 'Tempel Link Berbagi Google Drive:',
         inputPlaceholder: 'https://drive.google.com/file/d/.../view?usp=sharing',
         showCancelButton: true,
-        confirmButtonText: 'Sisipkan ke Soal'
+        confirmButtonText: 'Sisipkan Media'
       });
       if (url && url.trim() !== '') {
-        const area = document.getElementById("manTanya");
-        area.value += (area.value ? ' ' : '') + `[${jenis}:${url.trim()}]`;
+        const kolomTarget = document.getElementById(targetId);
+        if (kolomTarget) {
+          kolomTarget.value += (kolomTarget.value ? ' ' : '') + `[${jenis}:${url.trim()}]`;
+        }
       }
     }
 
