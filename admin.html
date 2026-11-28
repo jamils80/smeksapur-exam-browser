@@ -258,7 +258,7 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      max-height: 620px;
+      max-height: 680px;
       overflow-y: auto;
       padding: 6px 4px;
     }
@@ -683,68 +683,37 @@
         </div>
       </div>
 
-      <!-- TABEL PRATINJAU SOAL DENGAN CHECKBOX PEMILIH -->
+      <!-- PRATINJAU SOAL BENTUK LEMBAR UJIAN DENGAN CHECKBOX -->
       <div id="preview-upload-box" style="display:none; margin-top:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px; background:#f0fdf4; border:1px solid #bbf7d0; padding:12px 14px; border-radius:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px; background:#eff6ff; border:1.5px solid #93c5fd; padding:12px 16px; border-radius:10px;">
           <div>
-            <h4 id="judul-preview" style="margin:0; color:#15803d;"></h4>
-            <span style="font-size:12px; color:#475569;">Centang kotak di kolom paling kiri untuk memilih soal yang akan digunakan dalam ujian.</span>
+            <h4 id="judul-preview" style="margin:0 0 4px 0; color:#1e3a8a;"></h4>
+            <label style="display:inline-flex; align-items:center; gap:7px; font-size:13px; color:#334155; cursor:pointer; font-weight:600;">
+              <input type="checkbox" id="cekPilihSemuaSoal" checked onchange="togglePilihSemuaPreview(this.checked)" style="width:16px; height:16px; accent-color:#2563eb;">
+              Pilih / Batalkan Semua Soal
+            </label>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn btn-secondary" onclick="bersihkanDaftarPreview()">🗑️ Kosongkan Daftar</button>
             <button type="button" class="btn btn-primary" onclick="kirimSoalKeServer()">🚀 Simpan Soal Terpilih ke Bank Soal</button>
           </div>
         </div>
-        <div class="table-wrap" style="max-height:420px;">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:45px; text-align:center;">
-                  <input type="checkbox" id="cekPilihSemuaSoal" checked onchange="togglePilihSemuaPreview(this.checked)" title="Pilih Semua">
-                </th>
-                <th style="width:45px;">No</th>
-                <th style="width:75px;">Tipe</th>
-                <th>Pertanyaan</th>
-                <th>Opsi A</th>
-                <th>Opsi B</th>
-                <th>Opsi C</th>
-                <th>Opsi D</th>
-                <th>Opsi E</th>
-                <th style="width:110px;">Kunci</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-preview-soal"></tbody>
-          </table>
-        </div>
+
+        <div id="wadah-preview-kartu" class="preview-list-container"></div>
       </div>
     </div>
 
-    <!-- TAB 4: CEK BANK SOAL (ADMIN & GURU) -->
+    <!-- TAB 4: CEK BANK SOAL (ADMIN & GURU) - BENTUK PREVIEW KARTU UJIAN -->
     <div id="tab-cek-soal" class="tab-content akses-guru">
       <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
         <select id="cekTargetMapel" style="max-width:340px;"></select>
-        <button class="btn btn-primary" onclick="muatSoalMapel()">🔍 Tampilkan Daftar Soal</button>
+        <button class="btn btn-primary" onclick="muatSoalMapel()">🔍 Tampilkan Preview Bank Soal</button>
       </div>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:50px;">No</th>
-              <th style="width:75px;">Tipe</th>
-              <th>Pertanyaan</th>
-              <th>Opsi A</th>
-              <th>Opsi B</th>
-              <th>Opsi C</th>
-              <th>Opsi D</th>
-              <th>Opsi E</th>
-              <th style="width:110px;">Kunci</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-cek-soal">
-            <tr><td colspan="9" style="text-align:center; color:#64748b;">Pilih mata pelajaran lalu klik "Tampilkan Daftar Soal"</td></tr>
-          </tbody>
-        </table>
+      <div id="wadah-cek-soal-kartu" class="preview-list-container">
+        <div style="text-align:center; padding:28px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; color:#64748b;">
+          Pilih mata pelajaran lalu klik <b>"Tampilkan Preview Bank Soal"</b> untuk melihat tampilan soal.
+        </div>
       </div>
     </div>
 
@@ -809,7 +778,7 @@
     let dataSesiGlobal = [];
     let daftarAkunGlobal = [];
     let jumlahSoalGlobal = {};
-    let soalHasilParse = []; // Setiap item memiliki properti { dipilih: true, ... }
+    let soalHasilParse = [];
 
     // --- ANIMASI PARTIKEL DINAMIS (SALJU PAGI/SIANG & KUNANG-KUNANG MALAM) ---
     function inisialisasiAnimasiSuasana() {
@@ -1262,6 +1231,140 @@
       muatDataPortal();
     }
 
+    // --- HELPER FORMAT MEDIA GOOGLE DRIVE & KARTU PREVIEW SOAL ---
+    function formatMediaPreview(teksRaw) {
+      if (!teksRaw) return "";
+      let hasil = String(teksRaw);
+
+      const ekstrakDirectUrl = (url, jenis) => {
+        const matchDrive = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (matchDrive && matchDrive[1]) {
+          const fileId = matchDrive[1];
+          return jenis === 'IMG'
+            ? `https://lh3.googleusercontent.com/d/${fileId}`
+            : `https://drive.google.com/uc?export=download&id=${fileId}`;
+        }
+        return url;
+      };
+
+      hasil = hasil.replace(/\[IMG:(.*?)\]/gi, (_, url) => {
+        const src = ekstrakDirectUrl(url.trim(), 'IMG');
+        return `<span class="media-wrapper"><img src="${src}" class="media-img" alt="Gambar Soal" loading="lazy"></span>`;
+      });
+
+      hasil = hasil.replace(/\[AUDIO:(.*?)\]/gi, (_, url) => {
+        const src = ekstrakDirectUrl(url.trim(), 'AUDIO');
+        return `<span class="media-wrapper"><audio controls class="media-audio" src="${src}"></audio></span>`;
+      });
+
+      hasil = hasil.replace(/\[VIDEO:(.*?)\]/gi, (_, url) => {
+        const src = ekstrakDirectUrl(url.trim(), 'VIDEO');
+        return `<span class="media-wrapper"><video controls playsinline class="media-video" src="${src}"></video></span>`;
+      });
+
+      return hasil.replace(/\n/g, '<br>');
+    }
+
+    function buatHTMLKartuSoal(s, nomorUrut, opsiKontrol = { pakaiCheckbox: false, idx: 0, dipilih: true }) {
+      const tipe = String(s.tipe || 'PG').toUpperCase();
+      const kunciRaw = String(s.kunci || '').toUpperCase();
+      let badgeHTML = '';
+      let bodyKontenHTML = '';
+
+      if (tipe === 'PG' || tipe === 'PGK') {
+        badgeHTML = tipe === 'PG'
+          ? `<span class="badge-tipe-prev prev-pg">Pilihan Ganda (1 Jawaban)</span>`
+          : `<span class="badge-tipe-prev prev-pgk">Pilihan Ganda Kompleks (>1 Jawaban)</span>`;
+
+        const listKunci = kunciRaw.split(',').map(k => k.trim());
+        const daftarOpsi = [
+          { huruf: 'A', teks: s.a },
+          { huruf: 'B', teks: s.b },
+          { huruf: 'C', teks: s.c },
+          { huruf: 'D', teks: s.d },
+          { huruf: 'E', teks: s.e }
+        ].filter(o => o.teks !== undefined && String(o.teks).trim() !== '');
+
+        bodyKontenHTML = daftarOpsi.map(o => {
+          const isBenar = listKunci.includes(o.huruf);
+          const ikonBentuk = tipe === 'PG' ? (isBenar ? '🔘' : '⚪') : (isBenar ? '☑️' : '⬜');
+          const labelKunci = isBenar
+            ? `<span style="margin-left:auto; font-size:11px; background:#16a34a; color:white; padding:2px 8px; border-radius:12px;">✔ Kunci</span>`
+            : '';
+          return `
+            <div class="opsi-preview-item ${isBenar ? 'kunci-benar' : ''}">
+              <span>${ikonBentuk}</span>
+              <div style="flex:1;"><b>${o.huruf}.</b> ${formatMediaPreview(o.teks)}</div>
+              ${labelKunci}
+            </div>`;
+        }).join('');
+      }
+      else if (tipe === 'BS') {
+        badgeHTML = `<span class="badge-tipe-prev prev-bs">Pilihan Ganda Kompleks (Benar / Salah)</span>`;
+        const daftarPernyataan = [s.a, s.b, s.c, s.d, s.e].filter(p => p !== undefined && String(p).trim() !== '');
+        const listKunciBS = kunciRaw.split(',').map(k => k.trim());
+
+        const barisBS = daftarPernyataan.map((p, i) => {
+          const k = listKunciBS[i] || '-';
+          return `
+            <tr>
+              <td>${formatMediaPreview(p)}</td>
+              <td style="text-align:center; width:75px; font-weight:bold; color:${k === 'B' ? '#16a34a' : '#94a3b8'};">${k === 'B' ? '✔ B' : '○'}</td>
+              <td style="text-align:center; width:75px; font-weight:bold; color:${k === 'S' ? '#dc2626' : '#94a3b8'};">${k === 'S' ? '✔ S' : '○'}</td>
+            </tr>`;
+        }).join('');
+
+        bodyKontenHTML = `
+          <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:13.5px;">
+            <thead>
+              <tr>
+                <th style="background:#f1f5f9;">Pernyataan</th>
+                <th style="background:#f1f5f9; text-align:center;">Benar</th>
+                <th style="background:#f1f5f9; text-align:center;">Salah</th>
+              </tr>
+            </thead>
+            <tbody>${barisBS}</tbody>
+          </table>`;
+      }
+      else if (tipe === 'URAIAN') {
+        badgeHTML = `<span class="badge-tipe-prev prev-uraian">Soal Uraian / Esai</span>`;
+        bodyKontenHTML = `
+          <div style="background:#f0fdf4; border:1px solid #86efac; padding:10px 14px; border-radius:8px; font-size:13.5px; color:#14532d; margin-top:8px;">
+            <b>Pedoman / Kunci Jawaban:</b><br>${formatMediaPreview(s.kunci)}
+          </div>`;
+      }
+
+      const headerKiri = opsiKontrol.pakaiCheckbox
+        ? `<label class="label-cek-soal">
+             <input type="checkbox" ${opsiKontrol.dipilih ? 'checked' : ''} onchange="togglePilihSatuSoal(${opsiKontrol.idx}, this.checked)">
+             <span>Gunakan Soal No. ${nomorUrut}</span>
+           </label>`
+        : `<span style="font-weight:800; font-size:14px; color:#1e3a8a;">Soal No. ${nomorUrut}</span>`;
+
+      const tombolHapus = opsiKontrol.pakaiCheckbox
+        ? `<button type="button" class="btn btn-danger" style="padding:4px 9px; font-size:11px;" onclick="hapusSatuSoalPreview(${opsiKontrol.idx})" title="Hapus dari daftar">🗑️ Hapus</button>`
+        : '';
+
+      const kelasKartu = opsiKontrol.pakaiCheckbox
+        ? (opsiKontrol.dipilih ? 'terpilih' : 'tidak-terpilih')
+        : 'terpilih';
+
+      return `
+        <div class="kartu-preview-soal ${kelasKartu}">
+          <div class="header-kartu-preview">
+            ${headerKiri}
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${badgeHTML}
+              ${tombolHapus}
+            </div>
+          </div>
+          <div class="teks-tanya-preview">
+            <b>${nomorUrut}.</b> ${formatMediaPreview(s.tanya)}
+          </div>
+          ${bodyKontenHTML}
+        </div>`;
+    }
+
     // --- TAB 3: INPUT / UPLOAD SOAL (EXCEL, MANUAL, GEMINI AI) ---
     function pilihModeInputSoal(mode) {
       document.getElementById("panel-input-excel").style.display = (mode === 'excel') ? 'block' : 'none';
@@ -1357,7 +1460,7 @@
       document.getElementById("manKunci").value = "";
 
       renderTabelPreviewSoal();
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Soal manual ditambahkan ke daftar', showConfirmButton: false, timer: 1800 });
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Soal manual ditambahkan ke preview', showConfirmButton: false, timer: 1800 });
     }
 
     async function bukaDialogGeminiAI() {
@@ -1476,32 +1579,23 @@
     }
 
     function renderTabelPreviewSoal() {
+      const box = document.getElementById("preview-upload-box");
+      const wadah = document.getElementById("wadah-preview-kartu");
       if (soalHasilParse.length === 0) {
-        document.getElementById("preview-upload-box").style.display = "none";
+        box.style.display = "none";
+        wadah.innerHTML = "";
         return;
       }
 
       const jumlahTerpilih = soalHasilParse.filter(s => s.dipilih).length;
-      document.getElementById("judul-preview").innerText = `Daftar Soal Siap Simpan (${jumlahTerpilih} dari ${soalHasilParse.length} soal dicentang)`;
+      document.getElementById("judul-preview").innerText = `Pratinjau Soal Siap Ujian (${jumlahTerpilih} dari ${soalHasilParse.length} soal dicentang)`;
       document.getElementById("cekPilihSemuaSoal").checked = (jumlahTerpilih === soalHasilParse.length);
 
-      document.getElementById("tbody-preview-soal").innerHTML = soalHasilParse.map((s, idx) => `
-        <tr style="${s.dipilih ? '' : 'opacity:0.48; background:#f1f5f9;'}">
-          <td style="text-align:center;">
-            <input type="checkbox" ${s.dipilih ? 'checked' : ''} onchange="togglePilihSatuSoal(${idx}, this.checked)">
-          </td>
-          <td>${idx + 1}</td>
-          <td><b>${s.tipe}</b></td>
-          <td>${s.tanya}</td>
-          <td>${s.a}</td>
-          <td>${s.b}</td>
-          <td>${s.c}</td>
-          <td>${s.d}</td>
-          <td>${s.e}</td>
-          <td><b>${s.kunci}</b></td>
-        </tr>`).join('');
+      wadah.innerHTML = soalHasilParse.map((s, idx) =>
+        buatHTMLKartuSoal(s, idx + 1, { pakaiCheckbox: true, idx: idx, dipilih: s.dipilih })
+      ).join('');
 
-      document.getElementById("preview-upload-box").style.display = "block";
+      box.style.display = "block";
     }
 
     function togglePilihSatuSoal(idx, status) {
@@ -1516,9 +1610,15 @@
       renderTabelPreviewSoal();
     }
 
+    function hapusSatuSoalPreview(idx) {
+      soalHasilParse.splice(idx, 1);
+      renderTabelPreviewSoal();
+    }
+
     function bersihkanDaftarPreview() {
       soalHasilParse = [];
       document.getElementById("fileSoalInput").value = "";
+      document.getElementById("wadah-preview-kartu").innerHTML = "";
       document.getElementById("preview-upload-box").style.display = "none";
     }
 
@@ -1601,7 +1701,7 @@
       }
     }
 
-    // --- TAB 4: CEK BANK SOAL ---
+    // --- TAB 4: CEK BANK SOAL (BENTUK PREVIEW KARTU UJIAN) ---
     async function muatSoalMapel() {
       const kodeMapel = document.getElementById("cekTargetMapel").value;
       if (!kodeMapel) return;
@@ -1610,22 +1710,13 @@
       const res = await panggilGAS({ aksi: 'PORTAL_LIHAT_SOAL', kodeMapel });
       Swal.close();
 
-      const tbody = document.getElementById("tbody-cek-soal");
+      const wadah = document.getElementById("wadah-cek-soal-kartu");
       if (res.status === 'success' && res.soal.length > 0) {
-        tbody.innerHTML = res.soal.map(s => `
-          <tr>
-            <td>${s.no}</td>
-            <td><b>${s.tipe}</b></td>
-            <td>${s.tanya}</td>
-            <td>${s.a}</td>
-            <td>${s.b}</td>
-            <td>${s.c}</td>
-            <td>${s.d}</td>
-            <td>${s.e}</td>
-            <td><b>${s.kunci}</b></td>
-          </tr>`).join('');
+        wadah.innerHTML = res.soal.map((s, idx) =>
+          buatHTMLKartuSoal(s, s.no || (idx + 1), { pakaiCheckbox: false })
+        ).join('');
       } else {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#dc2626;">Belum ada soal tersimpan untuk mata pelajaran ini.</td></tr>`;
+        wadah.innerHTML = `<div style="text-align:center; padding:24px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px; color:#dc2626; font-weight:600;">Belum ada soal tersimpan untuk mata pelajaran ini.</div>`;
       }
     }
 
