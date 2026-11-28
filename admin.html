@@ -491,11 +491,65 @@
 
           <div id="blok-opsi-manual">
             <div class="form-grid" style="background:white; margin-bottom:12px;">
-              <div class="form-group"><label id="lbl-man-a">Opsi A</label><input type="text" id="manOpsiA" placeholder="Isi opsi A (atau [IMG:link_gdrive])"></div>
-              <div class="form-group"><label id="lbl-man-b">Opsi B</label><input type="text" id="manOpsiB" placeholder="Isi opsi B"></div>
-              <div class="form-group"><label id="lbl-man-c">Opsi C</label><input type="text" id="manOpsiC" placeholder="Isi opsi C"></div>
-              <div class="form-group" id="wrap-man-d"><label>Opsi D</label><input type="text" id="manOpsiD" placeholder="Isi opsi D"></div>
-              <div class="form-group" id="wrap-man-e"><label>Opsi E</label><input type="text" id="manOpsiE" placeholder="Isi opsi E"></div>
+              <div class="form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <label id="lbl-man-a" style="margin:0;">Opsi A</label>
+                  <div style="display:flex; gap:4px;">
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Gambar Google Drive" onclick="sisipMediaManual('IMG', 'manOpsiA')">🖼️</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Audio Google Drive" onclick="sisipMediaManual('AUDIO', 'manOpsiA')">🔊</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Video Google Drive" onclick="sisipMediaManual('VIDEO', 'manOpsiA')">🎬</button>
+                  </div>
+                </div>
+                <input type="text" id="manOpsiA" placeholder="Isi opsi A atau sisipkan media">
+              </div>
+
+              <div class="form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <label id="lbl-man-b" style="margin:0;">Opsi B</label>
+                  <div style="display:flex; gap:4px;">
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Gambar Google Drive" onclick="sisipMediaManual('IMG', 'manOpsiB')">🖼️</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Audio Google Drive" onclick="sisipMediaManual('AUDIO', 'manOpsiB')">🔊</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Video Google Drive" onclick="sisipMediaManual('VIDEO', 'manOpsiB')">🎬</button>
+                  </div>
+                </div>
+                <input type="text" id="manOpsiB" placeholder="Isi opsi B atau sisipkan media">
+              </div>
+
+              <div class="form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <label id="lbl-man-c" style="margin:0;">Opsi C</label>
+                  <div style="display:flex; gap:4px;">
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Gambar Google Drive" onclick="sisipMediaManual('IMG', 'manOpsiC')">🖼️</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Audio Google Drive" onclick="sisipMediaManual('AUDIO', 'manOpsiC')">🔊</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Video Google Drive" onclick="sisipMediaManual('VIDEO', 'manOpsiC')">🎬</button>
+                  </div>
+                </div>
+                <input type="text" id="manOpsiC" placeholder="Isi opsi C atau sisipkan media">
+              </div>
+
+              <div class="form-group" id="wrap-man-d">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <label style="margin:0;">Opsi D</label>
+                  <div style="display:flex; gap:4px;">
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Gambar Google Drive" onclick="sisipMediaManual('IMG', 'manOpsiD')">🖼️</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Audio Google Drive" onclick="sisipMediaManual('AUDIO', 'manOpsiD')">🔊</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Video Google Drive" onclick="sisipMediaManual('VIDEO', 'manOpsiD')">🎬</button>
+                  </div>
+                </div>
+                <input type="text" id="manOpsiD" placeholder="Isi opsi D atau sisipkan media">
+              </div>
+
+              <div class="form-group" id="wrap-man-e">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <label style="margin:0;">Opsi E</label>
+                  <div style="display:flex; gap:4px;">
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Gambar Google Drive" onclick="sisipMediaManual('IMG', 'manOpsiE')">🖼️</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Audio Google Drive" onclick="sisipMediaManual('AUDIO', 'manOpsiE')">🔊</button>
+                    <button type="button" class="btn btn-secondary" style="padding:3px 7px; font-size:11px;" title="Sisipkan Video Google Drive" onclick="sisipMediaManual('VIDEO', 'manOpsiE')">🎬</button>
+                  </div>
+                </div>
+                <input type="text" id="manOpsiE" placeholder="Isi opsi E atau sisipkan media">
+              </div>
             </div>
           </div>
 
