@@ -562,16 +562,18 @@
       return soalTeracak.map((s, idx) => {
         const tipe = (s.tipe || 'PG').toUpperCase();
         const daftarOpsi = [];
-        hurufOpsi.forEach(h => {
+        hurufOpsi.forEach((h, posisiAsli) => {
           if (s[h] !== undefined && s[h] !== null && String(s[h]).trim() !== "") {
             daftarOpsi.push({
               kodeAsli: h.toUpperCase(),
+              indexAsli: posisiAsli, // Menyimpan posisi kolom asli (0=A, 1=B, 2=C, dst.)
               teks: s[h]
             });
           }
         });
 
-        const opsiFinal = (tipe === 'PG' || tipe === 'PGK')
+        // Sekarang PG, PGK, maupun pernyataan BS aman untuk diacak
+        const opsiFinal = (tipe === 'PG' || tipe === 'PGK' || tipe === 'BS')
           ? acakArrayDenganSeed(daftarOpsi, rng)
           : daftarOpsi;
 
@@ -784,10 +786,16 @@
       } 
       else if (tipe === 'BS') {
         const hasilBS = [];
-        s.opsiTeracak.forEach((_, idx) => {
-          const terpilih = document.querySelector(`input[name="soal_${s.no}_item_${idx}"]:checked`);
-          hasilBS.push(terpilih ? terpilih.value : "-");
+        s.opsiTeracak.forEach((opsi) => {
+          const terpilih = document.querySelector(`input[name="soal_${s.no}_item_${opsi.indexAsli}"]:checked`);
+          // Simpan jawaban tepat sesuai urutan kolom asli di database
+          hasilBS[opsi.indexAsli] = terpilih ? terpilih.value : "-";
         });
+        // Rapikan slot kosong jika pernyataan hanya 3 baris (A, B, C)
+        const maksimalSlot = Math.max(...s.opsiTeracak.map(o => o.indexAsli)) + 1;
+        for (let i = 0; i < maksimalSlot; i++) {
+          if (!hasilBS[i]) hasilBS[i] = "-";
+        }
         jawabanTersimpan[s.no] = hasilBS.join(',');
       }
       else if (tipe === 'URAIAN') {
