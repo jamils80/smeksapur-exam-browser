@@ -356,6 +356,51 @@
     .opsi-preview-item .media-img { max-height: 130px; }
     .media-audio { width: 100%; max-width: 380px; height: 38px; display: block; }
     .media-video { width: 100%; max-width: 460px; max-height: 260px; border-radius: 8px; background: #000; display: block; }
+
+    /* --- GAYA TAB JAWABAN & SKOR SISWA --- */
+    .box-identitas-hasil {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      background: linear-gradient(135deg, #eff6ff, #f8fafc);
+      border: 1.5px solid #93c5fd;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .skor-lingkaran {
+      background: #16a34a;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 12px;
+      text-align: center;
+      min-width: 110px;
+    }
+    .skor-lingkaran span { display: block; font-size: 11px; text-transform: uppercase; opacity: 0.9; }
+    .skor-lingkaran b { font-size: 26px; font-weight: 800; }
+
+    .status-butir-benar { background: #dcfce7; color: #15803d; padding: 3px 10px; border-radius: 14px; font-size: 11px; font-weight: 800; }
+    .status-butir-salah { background: #fee2e2; color: #b91c1c; padding: 3px 10px; border-radius: 14px; font-size: 11px; font-weight: 800; }
+    .status-butir-uraian { background: #fef3c7; color: #b45309; padding: 3px 10px; border-radius: 14px; font-size: 11px; font-weight: 800; }
+
+    /* ATURAN KHUSUS SAAT PRINT (HANYA CETAK LEMBAR HASIL UJIAN) */
+    @media print {
+      body * { visibility: hidden; }
+      #area-cetak-hasil, #area-cetak-hasil * { visibility: visible; }
+      #area-cetak-hasil {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+        padding: 0;
+      }
+      .no-print { display: none !important; }
+      .preview-list-container { max-height: none !important; overflow: visible !important; }
+      .kartu-preview-soal { break-inside: avoid; page-break-inside: avoid; border: 1px solid #94a3b8; }
+    }
   </style>
 </head>
 <body>
@@ -399,6 +444,7 @@
       <button class="tab-btn khusus-admin" id="btn-tab-jadwal" onclick="bukaTab('tab-jadwal', this)">Jadwal & Token Ujian</button>
       <button class="tab-btn akses-guru" id="btn-tab-upload" onclick="bukaTab('tab-upload', this)">Input / Upload Soal</button>
       <button class="tab-btn akses-guru" id="btn-tab-cek-soal" onclick="bukaTab('tab-cek-soal', this)">Cek Bank Soal</button>
+      <button class="tab-btn akses-guru" id="btn-tab-hasil-siswa" onclick="bukaTab('tab-hasil-siswa', this); muatOpsiSiswaHasil();">📊 Jawaban & Skor Siswa</button>
       <button class="tab-btn khusus-admin" id="btn-tab-akun" onclick="bukaTab('tab-akun', this)">Kelola Akun Guru/Admin</button>
     </div>
 
@@ -717,6 +763,53 @@
       </div>
     </div>
 
+    <!-- TAB BARU: LIHAT JAWABAN & SKOR HASIL UJIAN SISWA (ADMIN & GURU) -->
+    <div id="tab-hasil-siswa" class="tab-content akses-guru">
+      <div class="form-grid no-print" style="margin-bottom:14px;">
+        <div class="form-group">
+          <label>1. Pilih Mata Pelajaran</label>
+          <select id="hasilTargetMapel" onchange="muatOpsiSiswaHasil()"></select>
+        </div>
+        <div class="form-group">
+          <label>2. Pilih Peserta / Siswa</label>
+          <select id="hasilTargetSiswa">
+            <option value="">-- Pilih Mata Pelajaran Terlebih Dahulu --</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex; align-items:flex-end;">
+          <button type="button" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;" onclick="tampilkanDetailJawabanSiswa()">
+            🔍 Tampilkan Jawaban & Skor
+          </button>
+        </div>
+      </div>
+
+      <!-- AREA HASIL YANG DAPAT DI-PRINT, DOWNLOAD EXCEL, & SIMPAN KE GOOGLE DRIVE -->
+      <div id="wadah-hasil-ujian-siswa" style="display:none;">
+        <div class="no-print" style="display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+          <button type="button" class="btn btn-secondary" onclick="cetakHasilUjianSiswa()">🖨️ Print</button>
+          <button type="button" class="btn btn-success" onclick="downloadExcelHasilSiswa()">📥 Download Excel (.xlsx)</button>
+          <button type="button" class="btn btn-primary" onclick="simpanHasilKeGoogleDrive()">☁️ Simpan ke Google Drive</button>
+        </div>
+
+        <div id="area-cetak-hasil">
+          <!-- Kop Cetak Resmi -->
+          <div style="border-bottom:2px solid #1e293b; padding-bottom:10px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <div style="font-size:12px; font-weight:700; color:#475569;">PEMERINTAH PROVINSI JAWA TIMUR — DINAS PENDIDIKAN</div>
+              <div style="font-size:16px; font-weight:800; color:#1e3a8a;">LEMBAR HASIL & ANALISIS JAWABAN UJIAN — SMK NEGERI 1 PURWOASRI</div>
+            </div>
+            <div style="font-size:11px; color:#64748b;" id="tgl-cetak-hasil"></div>
+          </div>
+
+          <!-- Ringkasan Identitas & Skor -->
+          <div id="ringkasan-skor-siswa" class="box-identitas-hasil"></div>
+
+          <!-- Daftar Rincian Soal, Jawaban Siswa, dan Kunci -->
+          <div id="daftar-butir-jawaban-siswa" class="preview-list-container"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB 5: KELOLA AKUN GURU & ADMIN (KHUSUS ADMIN) -->
     <div id="tab-akun" class="tab-content khusus-admin">
       <h3 style="margin-top:0;">Tambah Akun Guru / Proktor Baru</h3>
@@ -779,6 +872,7 @@
     let daftarAkunGlobal = [];
     let jumlahSoalGlobal = {};
     let soalHasilParse = [];
+    let detailHasilAktif = null;
 
     // --- ANIMASI PARTIKEL DINAMIS (SALJU PAGI/SIANG & KUNANG-KUNANG MALAM) ---
     function inisialisasiAnimasiSuasana() {
@@ -909,6 +1003,7 @@
       portalUserTersimpan = "";
       portalPassTersimpan = "";
       roleAktif = "";
+      detailHasilAktif = null;
       document.getElementById("portalPassInput").value = "";
       document.getElementById("dashboard-portal").style.display = "none";
       document.getElementById("login-portal").style.display = "block";
@@ -965,6 +1060,7 @@
         terapkanHakAksesUI(res.user);
 
         isiDropdownMapel();
+        muatOpsiSiswaHasil();
         if (roleAktif === 'ADMIN') {
           renderTabelSesi();
           renderTabelMapel();
@@ -1054,6 +1150,7 @@
 
       document.getElementById("uploadTargetMapel").innerHTML = opsiGuru;
       document.getElementById("cekTargetMapel").innerHTML = opsiGuru;
+      document.getElementById("hasilTargetMapel").innerHTML = opsiGuru;
 
       if (roleAktif === 'ADMIN') {
         const filterEl = document.getElementById("filterMapel");
@@ -1717,6 +1814,302 @@
         ).join('');
       } else {
         wadah.innerHTML = `<div style="text-align:center; padding:24px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px; color:#dc2626; font-weight:600;">Belum ada soal tersimpan untuk mata pelajaran ini.</div>`;
+      }
+    }
+
+    // --- TAB BARU: JAWABAN & SKOR HASIL UJIAN SISWA ---
+    function muatOpsiSiswaHasil() {
+      const kodeMapel = document.getElementById("hasilTargetMapel").value;
+      const selectSiswa = document.getElementById("hasilTargetSiswa");
+      if (!kodeMapel) {
+        selectSiswa.innerHTML = `<option value="">-- Pilih Mata Pelajaran --</option>`;
+        return;
+      }
+
+      const pesertaMapel = dataSesiGlobal.filter(s => s.kodeMapel === kodeMapel);
+      if (pesertaMapel.length === 0) {
+        selectSiswa.innerHTML = `<option value="">Belum ada peserta pada mapel ini</option>`;
+        return;
+      }
+
+      selectSiswa.innerHTML = pesertaMapel.map(s =>
+        `<option value="${s.userId}">${s.userId} - ${s.nama} (${s.kelas}) | Skor: ${s.skor} [${s.status}]</option>`
+      ).join('');
+    }
+
+    async function tampilkanDetailJawabanSiswa() {
+      const kodeMapel = document.getElementById("hasilTargetMapel").value;
+      const userId = document.getElementById("hasilTargetSiswa").value;
+      if (!kodeMapel || !userId) {
+        return Swal.fire('Pilih Data', 'Silakan pilih Mata Pelajaran dan Peserta Ujian terlebih dahulu.', 'warning');
+      }
+
+      Swal.fire({ title: 'Memuat Lembar Jawaban Siswa...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      try {
+        const res = await panggilGAS({
+          aksi: 'PORTAL_DETAIL_JAWABAN_SISWA',
+          kodeMapel,
+          userId
+        });
+        Swal.close();
+
+        if (res.status !== 'success') {
+          return Swal.fire('Gagal', res.pesan || 'Data jawaban tidak ditemukan.', 'error');
+        }
+
+        detailHasilAktif = res;
+        renderLembarHasilSiswa(res);
+      } catch (err) {
+        Swal.fire('Error', 'Gagal terhubung ke server GAS.', 'error');
+      }
+    }
+
+    function renderLembarHasilSiswa(data) {
+      const wadahUtama = document.getElementById("wadah-hasil-ujian-siswa");
+      const ringkasanEl = document.getElementById("ringkasan-skor-siswa");
+      const daftarEl = document.getElementById("daftar-butir-jawaban-siswa");
+      const p = data.peserta;
+      const jwbMap = data.jawabanSiswa || {};
+      const infoMapel = dataMapelGlobal.find(m => m.kode === p.kodeMapel);
+
+      document.getElementById("tgl-cetak-hasil").innerText = "Dicetak: " + new Date().toLocaleString('id-ID');
+
+      let jmlBenar = 0, jmlSalah = 0, jmlUraian = 0;
+      const rincianEkspor = [];
+
+      const htmlButir = data.soal.map((s, idx) => {
+        const tipe = String(s.tipe || 'PG').toUpperCase();
+        const kunciAsli = String(s.kunci || '').trim().toUpperCase();
+        const jwbSiswaRaw = String(jwbMap[s.no] || '').trim();
+        const jwbSiswaUpper = jwbSiswaRaw.toUpperCase();
+
+        let statusBadge = '';
+        let statusTeks = '';
+        let kontenOpsiHTML = '';
+
+        if (tipe === 'PG' || tipe === 'PGK') {
+          const arrKunci = kunciAsli.split(',').map(x => x.trim()).filter(Boolean).sort();
+          const arrJawab = jwbSiswaUpper.split(',').map(x => x.trim()).filter(Boolean).sort();
+          const isCocok = arrKunci.length > 0 && arrKunci.join(',') === arrJawab.join(',');
+
+          if (isCocok) {
+            jmlBenar++;
+            statusBadge = `<span class="status-butir-benar">✔ BENAR</span>`;
+            statusTeks = 'BENAR';
+          } else {
+            jmlSalah++;
+            statusBadge = `<span class="status-butir-salah">✖ SALAH</span>`;
+            statusTeks = 'SALAH';
+          }
+
+          const opsiList = [
+            { h: 'A', t: s.a }, { h: 'B', t: s.b }, { h: 'C', t: s.c }, { h: 'D', t: s.d }, { h: 'E', t: s.e }
+          ].filter(o => o.t !== undefined && String(o.t).trim() !== '');
+
+          kontenOpsiHTML = opsiList.map(o => {
+            const adalahKunci = arrKunci.includes(o.h);
+            const dipilihSiswa = arrJawab.includes(o.h);
+            let gayaItem = '';
+            let tagKeterangan = '';
+
+            if (adalahKunci && dipilihSiswa) {
+              gayaItem = 'background:#f0fdf4; border-color:#22c55e; color:#14532d; font-weight:600;';
+              tagKeterangan = `<span style="margin-left:auto; font-size:11px; background:#16a34a; color:white; padding:2px 8px; border-radius:10px;">✔ Jawaban Siswa & Kunci</span>`;
+            } else if (adalahKunci) {
+              gayaItem = 'background:#f0fdf4; border-color:#22c55e; color:#14532d;';
+              tagKeterangan = `<span style="margin-left:auto; font-size:11px; background:#15803d; color:white; padding:2px 8px; border-radius:10px;">✔ Kunci Jawaban</span>`;
+            } else if (dipilihSiswa) {
+              gayaItem = 'background:#fef2f2; border-color:#ef4444; color:#991b1b; font-weight:600;';
+              tagKeterangan = `<span style="margin-left:auto; font-size:11px; background:#dc2626; color:white; padding:2px 8px; border-radius:10px;">✖ Dipilih Siswa</span>`;
+            }
+
+            return `
+              <div class="opsi-preview-item" style="${gayaItem}">
+                <div style="flex:1;"><b>${o.h}.</b> ${formatMediaPreview(o.t)}</div>
+                ${tagKeterangan}
+              </div>`;
+          }).join('');
+        }
+        else if (tipe === 'BS') {
+          const arrKunciBS = kunciAsli.split(',').map(x => x.trim());
+          const arrJawabBS = jwbSiswaUpper.split(',').map(x => x.trim());
+          const pernyataanList = [s.a, s.b, s.c, s.d, s.e].filter(x => x !== undefined && String(x).trim() !== '');
+
+          const isCocokBS = pernyataanList.every((_, i) => (arrKunciBS[i] || '') === (arrJawabBS[i] || ''));
+          if (isCocokBS) {
+            jmlBenar++;
+            statusBadge = `<span class="status-butir-benar">✔ BENAR</span>`;
+            statusTeks = 'BENAR';
+          } else {
+            jmlSalah++;
+            statusBadge = `<span class="status-butir-salah">✖ SALAH</span>`;
+            statusTeks = 'SALAH';
+          }
+
+          const rowsBS = pernyataanList.map((teksP, i) => {
+            const k = arrKunciBS[i] || '-';
+            const j = arrJawabBS[i] || '-';
+            const sama = (k === j);
+            return `
+              <tr>
+                <td>${formatMediaPreview(teksP)}</td>
+                <td style="text-align:center; font-weight:bold; color:${sama ? '#16a34a' : '#dc2626'};">${j}</td>
+                <td style="text-align:center; font-weight:bold; color:#1e3a8a;">${k}</td>
+              </tr>`;
+          }).join('');
+
+          kontenOpsiHTML = `
+            <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:13px;">
+              <thead>
+                <tr>
+                  <th style="background:#f1f5f9;">Pernyataan</th>
+                  <th style="background:#f1f5f9; text-align:center; width:110px;">Jawaban Siswa</th>
+                  <th style="background:#f1f5f9; text-align:center; width:110px;">Kunci</th>
+                </tr>
+              </thead>
+              <tbody>${rowsBS}</tbody>
+            </table>`;
+        }
+        else if (tipe === 'URAIAN') {
+          jmlUraian++;
+          statusBadge = `<span class="status-butir-uraian">📝 URAIAN</span>`;
+          statusTeks = 'URAIAN';
+          kontenOpsiHTML = `
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:10px 12px; border-radius:8px; margin-top:8px; font-size:13.5px;">
+              <b>Jawaban Siswa:</b><br>${jwbSiswaRaw ? formatMediaPreview(jwbSiswaRaw) : '<i style="color:#94a3b8;">(Tidak dijawab)</i>'}
+            </div>
+            <div style="background:#f0fdf4; border:1px solid #86efac; padding:10px 12px; border-radius:8px; margin-top:6px; font-size:13.5px; color:#14532d;">
+              <b>Pedoman / Kunci Jawaban:</b><br>${formatMediaPreview(s.kunci)}
+            </div>`;
+        }
+
+        rincianEkspor.push({
+          No: s.no || (idx + 1),
+          Tipe: tipe,
+          Pertanyaan: String(s.tanya || '').replace(/<[^>]*>/g, ''),
+          JawabanSiswa: jwbSiswaRaw || '(Kosong)',
+          KunciJawaban: kunciAsli,
+          Status: statusTeks
+        });
+
+        return `
+          <div class="kartu-preview-soal terpilih">
+            <div class="header-kartu-preview">
+              <span style="font-weight:800; font-size:14px; color:#0f172a;">Soal No. ${s.no || (idx + 1)} (${tipe})</span>
+              ${statusBadge}
+            </div>
+            <div class="teks-tanya-preview"><b>${s.no || (idx + 1)}.</b> ${formatMediaPreview(s.tanya)}</div>
+            ${kontenOpsiHTML}
+          </div>`;
+      }).join('');
+
+      detailHasilAktif.rincianEkspor = rincianEkspor;
+      detailHasilAktif.statistik = { jmlBenar, jmlSalah, jmlUraian };
+
+      ringkasanEl.innerHTML = `
+        <div style="font-size:13.5px; line-height:1.6;">
+          <div><b>Nama Peserta:</b> ${p.nama} (<code>${p.userId}</code>) — <b>Kelas:</b> ${p.kelas}</div>
+          <div><b>Mata Pelajaran:</b> ${p.kodeMapel} — ${infoMapel ? infoMapel.nama : ''}</div>
+          <div style="margin-top:4px;">
+            <span class="status-butir-benar">Benar: ${jmlBenar}</span>
+            <span class="status-butir-salah" style="margin-left:6px;">Salah: ${jmlSalah}</span>
+            ${jmlUraian > 0 ? `<span class="status-butir-uraian" style="margin-left:6px;">Uraian: ${jmlUraian}</span>` : ''}
+            <span style="margin-left:10px; color:#475569; font-size:12px;">Status: <b>${p.status}</b></span>
+          </div>
+        </div>
+        <div class="skor-lingkaran">
+          <span>Skor Akhir</span>
+          <b>${p.skor}</b>
+        </div>
+      `;
+
+      daftarEl.innerHTML = htmlButir;
+      wadahUtama.style.display = "block";
+    }
+
+    function cetakHasilUjianSiswa() {
+      if (!detailHasilAktif) return;
+      window.print();
+    }
+
+    function downloadExcelHasilSiswa() {
+      if (!detailHasilAktif) return;
+      const p = detailHasilAktif.peserta;
+      const stat = detailHasilAktif.statistik;
+
+      const headerInfo = [
+        ["LAPORAN HASIL & ANALISIS JAWABAN UJIAN - SMK NEGERI 1 PURWOASRI"],
+        ["User ID", p.userId, "Mata Pelajaran", p.kodeMapel],
+        ["Nama Peserta", p.nama, "Skor Akhir", p.skor],
+        ["Kelas", p.kelas, "Benar / Salah", `${stat.jmlBenar} Benar / ${stat.jmlSalah} Salah`],
+        [],
+        ["No", "Tipe Soal", "Pertanyaan", "Jawaban Siswa", "Kunci Jawaban", "Status Koreksi"]
+      ];
+
+      const barisData = detailHasilAktif.rincianEkspor.map(r => [
+        r.No, r.Tipe, r.Pertanyaan, r.JawabanSiswa, r.KunciJawaban, r.Status
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet([...headerInfo, ...barisData]);
+      ws['!cols'] = [{ wch: 6 }, { wch: 10 }, { wch: 55 }, { wch: 24 }, { wch: 24 }, { wch: 16 }];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Hasil_Siswa");
+      XLSX.writeFile(wb, `Hasil_${p.kodeMapel}_${p.userId}_${p.nama.replace(/\s+/g, '_')}.xlsx`);
+    }
+
+    async function simpanHasilKeGoogleDrive() {
+      if (!detailHasilAktif) return;
+      const p = detailHasilAktif.peserta;
+      const areaHtml = document.getElementById("area-cetak-hasil").innerHTML;
+
+      const dokumenLengkap = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; font-size: 12px; color: #0f172a; padding: 16px; }
+            .box-identitas-hasil { border: 1px solid #93c5fd; background: #eff6ff; padding: 12px; border-radius: 8px; margin-bottom: 14px; display: flex; justify-content: space-between; }
+            .skor-lingkaran { background: #16a34a; color: white; padding: 8px 16px; border-radius: 8px; text-align: center; }
+            .kartu-preview-soal { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 10px; page-break-inside: avoid; }
+            .header-kartu-preview { border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 8px; font-weight: bold; }
+            .opsi-preview-item { padding: 6px 10px; margin: 4px 0; border: 1px solid #e2e8f0; border-radius: 6px; }
+            .status-butir-benar { color: #15803d; font-weight: bold; }
+            .status-butir-salah { color: #b91c1c; font-weight: bold; }
+            table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px; }
+            img { max-width: 240px; max-height: 160px; }
+          </style>
+        </head>
+        <body>${areaHtml}</body>
+        </html>`;
+
+      Swal.fire({
+        title: 'Menyimpan PDF ke Google Drive...',
+        text: 'Mohon tunggu sebentar',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        const res = await panggilGAS({
+          aksi: 'PORTAL_SIMPAN_DRIVE_HASIL',
+          judulFile: `Hasil_${p.kodeMapel}_${p.userId}_${p.nama}`,
+          htmlKonten: dokumenLengkap
+        });
+
+        if (res.status === 'success') {
+          Swal.fire({
+            icon: 'success',
+            title: 'Tersimpan di Google Drive!',
+            html: `${res.pesan}<br><br><a href="${res.urlFile}" target="_blank" style="display:inline-block; padding:9px 16px; background:#2563eb; color:white; border-radius:8px; text-decoration:none; font-weight:bold;">📄 Buka File PDF di Drive</a>`
+          });
+        } else {
+          Swal.fire('Gagal', res.pesan || 'Gagal menyimpan ke Google Drive.', 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error', 'Gagal terhubung ke server GAS.', 'error');
       }
     }
 
