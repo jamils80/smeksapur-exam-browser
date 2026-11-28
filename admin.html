@@ -252,6 +252,110 @@
       flex-wrap: wrap;
       margin-top: 8px;
     }
+
+    /* --- GAYA KARTU PREVIEW SOAL SIAP UJIAN --- */
+    .preview-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 620px;
+      overflow-y: auto;
+      padding: 6px 4px;
+    }
+
+    .kartu-preview-soal {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+      transition: all 0.2s ease;
+    }
+    .kartu-preview-soal.terpilih {
+      border-color: #2563eb;
+      background: #ffffff;
+    }
+    .kartu-preview-soal.tidak-terpilih {
+      opacity: 0.52;
+      background: #f1f5f9;
+      border-style: dashed;
+    }
+
+    .header-kartu-preview {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .label-cek-soal {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 14px;
+      color: #0f172a;
+    }
+    .label-cek-soal input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #2563eb;
+    }
+
+    .badge-tipe-prev {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .prev-pg { background: #e0f2fe; color: #0369a1; }
+    .prev-pgk { background: #fef3c7; color: #b45309; }
+    .prev-bs { background: #f3e8ff; color: #7e22ce; }
+    .prev-uraian { background: #dcfce7; color: #15803d; }
+
+    .teks-tanya-preview {
+      font-size: 15px;
+      color: #0f172a;
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+
+    .opsi-preview-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 9px 12px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .opsi-preview-item.kunci-benar {
+      background: #f0fdf4;
+      border-color: #22c55e;
+      color: #14532d;
+      font-weight: 600;
+    }
+
+    .media-wrapper { display: block; margin: 8px 0; }
+    .media-img {
+      max-width: 100%;
+      max-height: 260px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      display: block;
+    }
+    .opsi-preview-item .media-img { max-height: 130px; }
+    .media-audio { width: 100%; max-width: 380px; height: 38px; display: block; }
+    .media-video { width: 100%; max-width: 460px; max-height: 260px; border-radius: 8px; background: #000; display: block; }
   </style>
 </head>
 <body>
