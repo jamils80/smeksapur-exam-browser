@@ -30,22 +30,36 @@
       background-image: url('https://lh3.googleusercontent.com/d/1Vo2a5qqGEPQm3XzyB0-qZr9NdBvNtXGX');
       background-size: cover;
       background-position: center;
-      z-index: -2;
-      animation: kenBurnsDinamis 25s ease-in-out infinite alternate;
+      z-index: -3;
+      animation: kenBurnsDinamis 28s ease-in-out infinite alternate;
     }
 
     .bg-overlay {
       position: fixed;
       inset: 0;
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.76), rgba(30, 58, 138, 0.58));
-      backdrop-filter: blur(3px);
+      z-index: -2;
+      transition: background 1s ease;
+    }
+    .bg-overlay.mode-siang {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.42), rgba(30, 58, 138, 0.32));
+    }
+    .bg-overlay.mode-malam {
+      background: linear-gradient(135deg, rgba(6, 11, 25, 0.78), rgba(15, 23, 42, 0.68));
+    }
+
+    #canvas-partikel {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
       z-index: -1;
     }
 
     @keyframes kenBurnsDinamis {
       0% { transform: scale(1) translate(0px, 0px); }
-      50% { transform: scale(1.08) translate(-15px, -10px); }
-      100% { transform: scale(1.12) translate(15px, 10px); }
+      50% { transform: scale(1.07) translate(-14px, -9px); }
+      100% { transform: scale(1.11) translate(14px, 9px); }
     }
 
     @keyframes munculHalus {
@@ -58,11 +72,13 @@
       max-width: 820px;
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.5);
       padding: 26px;
       border-radius: 16px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.38);
       animation: munculHalus 0.6s ease-out;
+      position: relative;
+      z-index: 1;
     }
 
     #halaman-login { max-width: 480px; }
@@ -302,7 +318,8 @@
 <body oncontextmenu="return false;">
 
   <div class="bg-animated"></div>
-  <div class="bg-overlay"></div>
+  <div id="bg-overlay" class="bg-overlay"></div>
+  <canvas id="canvas-partikel"></canvas>
 
   <!-- 1. FORM LOGIN MULTI-MAPEL -->
   <div id="halaman-login" class="box">
@@ -387,7 +404,114 @@
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+    // --- ANIMASI PARTIKEL DINAMIS (SALJU PAGI/SIANG & KUNANG-KUNANG MALAM) ---
+    function inisialisasiAnimasiSuasana() {
+      const canvas = document.getElementById("canvas-partikel");
+      const overlay = document.getElementById("bg-overlay");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+
+      let lebar = canvas.width = window.innerWidth;
+      let tinggi = canvas.height = window.innerHeight;
+      window.addEventListener("resize", () => {
+        lebar = canvas.width = window.innerWidth;
+        tinggi = canvas.height = window.innerHeight;
+      });
+
+      const jam = new Date().getHours();
+      const isMalam = (jam >= 18 || jam < 5);
+
+      if (overlay) {
+        overlay.className = isMalam ? "bg-overlay mode-malam" : "bg-overlay mode-siang";
+      }
+
+      const jumlahPartikel = isMalam ? 42 : 70;
+      const partikel = [];
+
+      for (let i = 0; i < jumlahPartikel; i++) {
+        if (isMalam) {
+          // Kunang-kunang malam hari
+          partikel.push({
+            x: Math.random() * lebar,
+            y: Math.random() * tinggi,
+            r: Math.random() * 2.6 + 1.4,
+            vx: (Math.random() - 0.5) * 0.7,
+            vy: (Math.random() - 0.5) * 0.55,
+            fase: Math.random() * Math.PI * 2,
+            kecepatanKedip: 0.02 + Math.random() * 0.03
+          });
+        } else {
+          // Butiran salju pagi/siang hari
+          partikel.push({
+            x: Math.random() * lebar,
+            y: Math.random() * tinggi,
+            r: Math.random() * 3.2 + 1.2,
+            vy: Math.random() * 1.1 + 0.45,
+            ayun: Math.random() * Math.PI * 2,
+            kecepatanAyun: 0.01 + Math.random() * 0.02,
+            opacity: Math.random() * 0.55 + 0.35
+          });
+        }
+      }
+
+      function gambarFrame() {
+        ctx.clearRect(0, 0, lebar, tinggi);
+
+        if (isMalam) {
+          for (const p of partikel) {
+            p.x += p.vx + Math.sin(p.fase * 0.5) * 0.25;
+            p.y += p.vy + Math.cos(p.fase * 0.4) * 0.2;
+            p.fase += p.kecepatanKedip;
+
+            if (p.x < -20) p.x = lebar + 20;
+            if (p.x > lebar + 20) p.x = -20;
+            if (p.y < -20) p.y = tinggi + 20;
+            if (p.y > tinggi + 20) p.y = -20;
+
+            const cahaya = 0.25 + 0.75 * ((Math.sin(p.fase) + 1) / 2);
+            const radiusPendar = p.r * 5.5;
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radiusPendar);
+            grad.addColorStop(0, `rgba(254, 240, 138, ${cahaya})`);
+            grad.addColorStop(0.35, `rgba(190, 242, 100, ${cahaya * 0.55})`);
+            grad.addColorStop(1, "rgba(190, 242, 100, 0)");
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radiusPendar, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          for (const p of partikel) {
+            p.y += p.vy;
+            p.ayun += p.kecepatanAyun;
+            p.x += Math.sin(p.ayun) * 0.65;
+
+            if (p.y > tinggi + 10) {
+              p.y = -10;
+              p.x = Math.random() * lebar;
+            }
+            if (p.x > lebar + 10) p.x = -10;
+            if (p.x < -10) p.x = lebar + 10;
+
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 1.8);
+            grad.addColorStop(0, `rgba(255, 255, 255, ${p.opacity})`);
+            grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * 1.8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        requestAnimationFrame(gambarFrame);
+      }
+
+      gambarFrame();
+    }
+
     window.addEventListener("DOMContentLoaded", () => {
+      inisialisasiAnimasiSuasana();
       muatDaftarMapel();
     });
 
@@ -432,31 +556,28 @@
 
     function siapkanSoalDanOpsiAcak(soalMentah, userId, kodeMapel) {
       const rng = buatGeneratorAcak(`${userId}_${kodeMapel}`);
-      // 1. Acak urutan soal
       const soalTeracak = acakArrayDenganSeed(soalMentah, rng);
       const hurufOpsi = ['a', 'b', 'c', 'd', 'e'];
 
       return soalTeracak.map((s, idx) => {
         const tipe = (s.tipe || 'PG').toUpperCase();
-        // Kumpulkan opsi yang terisi
         const daftarOpsi = [];
         hurufOpsi.forEach(h => {
           if (s[h] !== undefined && s[h] !== null && String(s[h]).trim() !== "") {
             daftarOpsi.push({
-              kodeAsli: h.toUpperCase(), // Tetap simpan A/B/C/D/E asli untuk pencocokan kunci
+              kodeAsli: h.toUpperCase(),
               teks: s[h]
             });
           }
         });
 
-        // 2. Acak urutan pilihan jawaban hanya untuk PG dan PGK (BS tetap urut)
         const opsiFinal = (tipe === 'PG' || tipe === 'PGK')
           ? acakArrayDenganSeed(daftarOpsi, rng)
           : daftarOpsi;
 
         return {
           ...s,
-          nomorTampil: idx + 1, // Nomor urut tampilan 1, 2, 3...
+          nomorTampil: idx + 1,
           opsiTeracak: opsiFinal
         };
       });
@@ -571,7 +692,6 @@
 
         userAktif = hasil.peserta.userId;
         mapelAktif = hasil.mapel.kode;
-        // Acak urutan soal & pilihan jawaban secara konsisten untuk peserta ini
         daftarSoalGlobal = siapkanSoalDanOpsiAcak(hasil.soal, userAktif, mapelAktif);
         jawabanTersimpan = hasil.draftJawaban || {};
         indexSoalAktif = 0;
