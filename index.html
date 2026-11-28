@@ -790,19 +790,10 @@
         });
         jawabanTersimpan[s.no] = hasilBS.join(',');
       }
-    }
-
-    function pindahSoal(arah) {
-      simpanJawabanSoalAktif();
-      const targetIndex = indexSoalAktif + arah;
-      if (targetIndex >= 0 && targetIndex < daftarSoalGlobal.length) {
-        tampilkanSoal(targetIndex);
+      else if (tipe === 'URAIAN') {
+        const area = document.getElementById(`uraian_${s.no}`);
+        jawabanTersimpan[s.no] = area ? area.value : "";
       }
-    }
-
-    function lompatKeSoal(idx) {
-      simpanJawabanSoalAktif();
-      tampilkanSoal(idx);
     }
 
     function tampilkanSoal(idx) {
@@ -867,6 +858,14 @@
             <tbody>${barisPernyataan}</tbody>
           </table>`;
       }
+      else if (tipe === 'URAIAN') {
+        badgeHTML = `<span class="badge-tipe" style="background:#dcfce7; color:#15803d;">Soal Uraian / Esai</span>`;
+        kontenOpsi = `
+          <div style="margin-top:10px;">
+            <label style="display:block; font-size:13px; font-weight:700; color:#334155; margin-bottom:6px;">Tuliskan Jawaban Uraian Anda:</label>
+            <textarea id="uraian_${s.no}" rows="5" style="width:100%; padding:12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:14px; font-family:inherit;" placeholder="Ketik jawaban uraian Anda di sini..." oninput="simpanJawabanSoalAktif(); renderGridNavigasi();">${nilaiTersimpan}</textarea>
+          </div>`;
+      }
 
       document.getElementById("wadah-soal").innerHTML = `
         <div class="header-nomor-soal">
@@ -890,6 +889,19 @@
       }
 
       renderGridNavigasi();
+    }
+
+    function pindahSoal(arah) {
+      simpanJawabanSoalAktif();
+      const targetIndex = indexSoalAktif + arah;
+      if (targetIndex >= 0 && targetIndex < daftarSoalGlobal.length) {
+        tampilkanSoal(targetIndex);
+      }
+    }
+
+    function lompatKeSoal(idx) {
+      simpanJawabanSoalAktif();
+      tampilkanSoal(idx);
     }
 
     function kembaliKeHalamanLogin() {
