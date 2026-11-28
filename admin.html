@@ -113,14 +113,15 @@
       z-index: 1;
     }
 
-    input, select {
+    input, select, textarea {
       padding: 11px 14px;
       border: 1.5px solid #cbd5e1;
       border-radius: 8px;
       font-size: 14px;
       width: 100%;
+      font-family: inherit;
     }
-    input:focus, select:focus { outline: none; border-color: #2563eb; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; }
 
     .btn {
       padding: 10px 15px;
@@ -142,6 +143,8 @@
     .btn-danger:hover { background: #b91c1c; }
     .btn-warning { background: #d97706; color: white; }
     .btn-warning:hover { background: #b45309; }
+    .btn-gemini { background: linear-gradient(135deg, #7c3aed, #2563eb); color: white; }
+    .btn-gemini:hover { opacity: 0.92; }
     .btn-secondary { background: #64748b; color: white; }
 
     .tabs {
@@ -165,6 +168,34 @@
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+
+    .sub-mode-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .btn-submode {
+      padding: 11px 16px;
+      border-radius: 10px;
+      border: 2px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 700;
+      font-size: 13.5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-submode.active {
+      border-color: #2563eb;
+      background: #eff6ff;
+      color: #1e3a8a;
+    }
+    .btn-submode.gemini-mode.active {
+      border-color: #7c3aed;
+      background: #f5f3ff;
+      color: #5b21b6;
+    }
 
     .grid-stat {
       display: grid;
@@ -203,7 +234,7 @@
       padding: 16px;
       border-radius: 10px;
       border: 1px solid #cbd5e1;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #334155; }
     
@@ -214,6 +245,13 @@
     }
     .datetime-row input[type="date"] { flex: 1.4; padding: 10px 10px; }
     .datetime-row input[type="time"] { flex: 1; padding: 10px 10px; }
+
+    .media-chip-box {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -222,7 +260,7 @@
   <div id="bg-overlay" class="bg-overlay"></div>
   <canvas id="canvas-partikel"></canvas>
 
-  <!-- LOGIN PORTAL (USERNAME + PASSWORD) -->
+  <!-- LOGIN PORTAL -->
   <div id="login-portal">
     <img src="https://lh3.googleusercontent.com/d/1KZZymSyz_c9hLLoV2Rcx5_VrabMre6Db" style="width:68px; margin-bottom:10px;">
     <h2 style="margin:0 0 6px 0; color:#1e3a8a;">Portal Manajemen Ujian</h2>
@@ -244,6 +282,7 @@
         </div>
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-gemini" onclick="bukaModalApiKeyMandiri()">✨ API Key Gemini</button>
         <button class="btn btn-warning" onclick="bukaModalGantiPassword()">🔑 Ubah Password</button>
         <button class="btn btn-primary" onclick="muatDataPortal()">↻ Refresh</button>
         <button class="btn btn-secondary" onclick="logoutPortal()">Keluar</button>
@@ -254,7 +293,7 @@
     <div class="tabs" id="menu-tabs-bar">
       <button class="tab-btn khusus-admin" id="btn-tab-monitoring" onclick="bukaTab('tab-monitoring', this)">Monitoring & Reset Peserta</button>
       <button class="tab-btn khusus-admin" id="btn-tab-jadwal" onclick="bukaTab('tab-jadwal', this)">Jadwal & Token Ujian</button>
-      <button class="tab-btn akses-guru" id="btn-tab-upload" onclick="bukaTab('tab-upload', this)">Upload Soal (Excel/CSV)</button>
+      <button class="tab-btn akses-guru" id="btn-tab-upload" onclick="bukaTab('tab-upload', this)">Input / Upload Soal</button>
       <button class="tab-btn akses-guru" id="btn-tab-cek-soal" onclick="bukaTab('tab-cek-soal', this)">Cek Bank Soal</button>
       <button class="tab-btn khusus-admin" id="btn-tab-akun" onclick="bukaTab('tab-akun', this)">Kelola Akun Guru/Admin</button>
     </div>
@@ -376,54 +415,144 @@
       </div>
     </div>
 
-    <!-- TAB 3: UPLOAD SOAL (ADMIN & GURU) -->
+    <!-- TAB 3: INPUT / UPLOAD SOAL (EXCEL, MANUAL, GEMINI AI) -->
     <div id="tab-upload" class="tab-content akses-guru">
-      <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:16px; border-radius:10px; margin-bottom:20px;">
-        <h3 style="margin:0 0 8px 0; color:#1e3a8a;">Panduan Pengisian Template Soal</h3>
-        <p style="margin:0 0 12px 0; font-size:13px; color:#334155; line-height:1.5;">
-          1. Klik tombol <b>Download Template Soal (.xlsx)</b> di bawah ini lalu isi menggunakan Microsoft Excel.<br>
-          2. Kolom <b>Tipe</b> diisi: <code>PG</code> (Pilihan Ganda 1 jawaban), <code>PGK</code> (Kompleks lebih dari 1 jawaban, kunci dipisah koma misal <code>A,C</code>), atau <code>BS</code> (Benar-Salah, kunci misal <code>B,S,B</code>).<br>
-          3. Untuk menyisipkan <b>Gambar, Audio, atau Video</b> pada soal maupun opsi jawaban, tulis tag: <code>[IMG:link_gdrive]</code>, <code>[AUDIO:link_gdrive]</code>, atau <code>[VIDEO:link_gdrive]</code>.
-        </p>
-        <button class="btn btn-success" onclick="downloadTemplateExcel()">📄 Download Template Soal (.xlsx)</button>
-      </div>
-
-      <div class="form-grid">
+      <!-- Pengaturan Umum Mapel & Mode Simpan -->
+      <div class="form-grid" style="margin-bottom:14px;">
         <div class="form-group">
           <label>1. Pilih Mata Pelajaran Tujuan</label>
           <select id="uploadTargetMapel"></select>
         </div>
         <div class="form-group">
-          <label>2. Pilih File Soal (.xlsx, .xls, .csv)</label>
-          <input type="file" id="fileSoalInput" accept=".xlsx,.xls,.csv" onchange="bacaFileExcel(event)">
-        </div>
-        <div class="form-group">
-          <label>3. Mode Penyimpanan</label>
+          <label>2. Mode Penyimpanan ke Bank Soal</label>
           <select id="modeTimpaSoal">
-            <option value="true">Timpa / Ganti seluruh soal lama di mapel ini</option>
             <option value="false">Tambahkan di bawah soal yang sudah ada</option>
+            <option value="true">Timpa / Ganti seluruh soal lama di mapel ini</option>
           </select>
         </div>
       </div>
 
-      <div id="preview-upload-box" style="display:none; margin-top:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
-          <h4 id="judul-preview" style="margin:0; color:#16a34a;"></h4>
-          <button class="btn btn-primary" onclick="kirimSoalKeServer()">🚀 Upload & Simpan ke Server Sekarang</button>
+      <!-- Pilihan 3 Metode Input Soal -->
+      <div class="sub-mode-bar">
+        <button type="button" class="btn-submode active" id="btn-mode-excel" onclick="pilihModeInputSoal('excel')">
+          📊 Upload File Excel / CSV
+        </button>
+        <button type="button" class="btn-submode" id="btn-mode-manual" onclick="pilihModeInputSoal('manual')">
+          ✍️ Input Soal Manual
+        </button>
+        <button type="button" class="btn-submode gemini-mode" id="btn-mode-gemini" onclick="pilihModeInputSoal('gemini')">
+          ✨ Generate Soal dengan Gemini AI
+        </button>
+      </div>
+
+      <!-- PANEL A: UPLOAD EXCEL / CSV -->
+      <div id="panel-input-excel">
+        <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:16px; border-radius:10px; margin-bottom:16px;">
+          <h4 style="margin:0 0 8px 0; color:#1e3a8a;">Panduan Upload Template Soal</h4>
+          <p style="margin:0 0 12px 0; font-size:13px; color:#334155; line-height:1.5;">
+            1. Unduh template Excel di bawah, isi soal (<code>PG</code>, <code>PGK</code>, <code>BS</code>, atau <code>URAIAN</code>), lalu pilih filenya.<br>
+            2. Untuk media Google Drive pada soal atau opsi, gunakan tag: <code>[IMG:link_gdrive]</code>, <code>[AUDIO:link_gdrive]</code>, atau <code>[VIDEO:link_gdrive]</code>.
+          </p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <button type="button" class="btn btn-success" onclick="downloadTemplateExcel()">📄 Download Template Soal (.xlsx)</button>
+            <input type="file" id="fileSoalInput" accept=".xlsx,.xls,.csv" onchange="bacaFileExcel(event)" style="max-width:340px; background:white;">
+          </div>
         </div>
-        <div class="table-wrap" style="max-height:360px;">
+      </div>
+
+      <!-- PANEL B: INPUT SOAL MANUAL -->
+      <div id="panel-input-manual" style="display:none;">
+        <div style="background:#f8fafc; border:1.5px solid #cbd5e1; padding:18px; border-radius:12px; margin-bottom:16px;">
+          <h4 style="margin:0 0 12px 0; color:#0f172a;">Form Input Soal Manual</h4>
+          <div class="form-grid" style="background:white; margin-bottom:12px;">
+            <div class="form-group">
+              <label>Jenis / Tipe Soal</label>
+              <select id="manTipe" onchange="ubahTampilanOpsiManual()">
+                <option value="PG">PG (Pilihan Ganda - 1 Jawaban)</option>
+                <option value="PGK">PGK (Pilihan Ganda Kompleks - Lebih dari 1)</option>
+                <option value="BS">BS (Pilihan Ganda Kompleks - Benar/Salah)</option>
+                <option value="URAIAN">URAIAN (Esai / Jawaban Singkat)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Sisipkan Media Google Drive ke Pertanyaan (Opsional)</label>
+              <div class="media-chip-box">
+                <button type="button" class="btn btn-secondary" style="padding:7px 11px; font-size:12px;" onclick="sisipMediaManual('IMG')">🖼️ + Gambar</button>
+                <button type="button" class="btn btn-secondary" style="padding:7px 11px; font-size:12px;" onclick="sisipMediaManual('AUDIO')">🔊 + Audio</button>
+                <button type="button" class="btn btn-secondary" style="padding:7px 11px; font-size:12px;" onclick="sisipMediaManual('VIDEO')">🎬 + Video</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Teks Pertanyaan Soal</label>
+            <textarea id="manTanya" rows="3" placeholder="Tulis pertanyaan di sini..."></textarea>
+          </div>
+
+          <div id="blok-opsi-manual">
+            <div class="form-grid" style="background:white; margin-bottom:12px;">
+              <div class="form-group"><label id="lbl-man-a">Opsi A</label><input type="text" id="manOpsiA" placeholder="Isi opsi A (atau [IMG:link_gdrive])"></div>
+              <div class="form-group"><label id="lbl-man-b">Opsi B</label><input type="text" id="manOpsiB" placeholder="Isi opsi B"></div>
+              <div class="form-group"><label id="lbl-man-c">Opsi C</label><input type="text" id="manOpsiC" placeholder="Isi opsi C"></div>
+              <div class="form-group" id="wrap-man-d"><label>Opsi D</label><input type="text" id="manOpsiD" placeholder="Isi opsi D"></div>
+              <div class="form-group" id="wrap-man-e"><label>Opsi E</label><input type="text" id="manOpsiE" placeholder="Isi opsi E"></div>
+            </div>
+          </div>
+
+          <div class="form-group" style="max-width:460px; margin-bottom:14px;">
+            <label id="lbl-man-kunci">Kunci Jawaban (Contoh PG: C)</label>
+            <input type="text" id="manKunci" placeholder="Masukkan kunci jawaban">
+          </div>
+
+          <button type="button" class="btn btn-primary" onclick="tambahSoalManualKeDaftar()">➕ Tambahkan ke Daftar Siap Upload</button>
+        </div>
+      </div>
+
+      <!-- PANEL C: GENERATE DENGAN GEMINI AI -->
+      <div id="panel-input-gemini" style="display:none;">
+        <div style="background:linear-gradient(135deg, #f5f3ff, #eff6ff); border:1.5px solid #c4b5fd; padding:18px; border-radius:12px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h4 style="margin:0 0 6px 0; color:#5b21b6;">Generator Soal Otomatis dengan Gemini AI</h4>
+              <p style="margin:0; font-size:13px; color:#475569;">
+                Susun soal otomatis berdasarkan Tujuan Pembelajaran, lampiran media Google Drive, serta komposisi tipe & jumlah soal.
+              </p>
+            </div>
+            <button type="button" class="btn btn-gemini" style="padding:12px 18px; font-size:14px;" onclick="bukaDialogGeminiAI()">
+              ✨ Buka Pengaturan & Generate Soal AI
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABEL PRATINJAU SOAL DENGAN CHECKBOX PEMILIH -->
+      <div id="preview-upload-box" style="display:none; margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px; background:#f0fdf4; border:1px solid #bbf7d0; padding:12px 14px; border-radius:10px;">
+          <div>
+            <h4 id="judul-preview" style="margin:0; color:#15803d;"></h4>
+            <span style="font-size:12px; color:#475569;">Centang kotak di kolom paling kiri untuk memilih soal yang akan digunakan dalam ujian.</span>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-secondary" onclick="bersihkanDaftarPreview()">🗑️ Kosongkan Daftar</button>
+            <button type="button" class="btn btn-primary" onclick="kirimSoalKeServer()">🚀 Simpan Soal Terpilih ke Bank Soal</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="max-height:420px;">
           <table>
             <thead>
               <tr>
-                <th>No</th>
-                <th>Tipe</th>
+                <th style="width:45px; text-align:center;">
+                  <input type="checkbox" id="cekPilihSemuaSoal" checked onchange="togglePilihSemuaPreview(this.checked)" title="Pilih Semua">
+                </th>
+                <th style="width:45px;">No</th>
+                <th style="width:75px;">Tipe</th>
                 <th>Pertanyaan</th>
                 <th>Opsi A</th>
                 <th>Opsi B</th>
                 <th>Opsi C</th>
                 <th>Opsi D</th>
                 <th>Opsi E</th>
-                <th>Kunci</th>
+                <th style="width:110px;">Kunci</th>
               </tr>
             </thead>
             <tbody id="tbody-preview-soal"></tbody>
@@ -444,14 +573,14 @@
           <thead>
             <tr>
               <th style="width:50px;">No</th>
-              <th style="width:65px;">Tipe</th>
+              <th style="width:75px;">Tipe</th>
               <th>Pertanyaan</th>
               <th>Opsi A</th>
               <th>Opsi B</th>
               <th>Opsi C</th>
               <th>Opsi D</th>
               <th>Opsi E</th>
-              <th style="width:80px;">Kunci</th>
+              <th style="width:110px;">Kunci</th>
             </tr>
           </thead>
           <tbody id="tbody-cek-soal">
@@ -480,9 +609,13 @@
         <div class="form-group">
           <label>Hak Akses (Role)</label>
           <select id="newAkunRole">
-            <option value="GURU">GURU (Hanya Upload & Cek Soal)</option>
+            <option value="GURU">GURU (Hanya Input & Cek Soal)</option>
             <option value="ADMIN">ADMIN (Akses Penuh Proktor)</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>Gemini API Key Guru (Opsional)</label>
+          <input type="text" id="newAkunApiKey" placeholder="AIzaSy...">
         </div>
       </div>
       <div style="margin-bottom:20px;">
@@ -496,6 +629,7 @@
               <th>Username</th>
               <th>Nama Lengkap</th>
               <th>Role / Hak Akses</th>
+              <th>Gemini API Key</th>
               <th>Status</th>
               <th style="width: 170px;">Aksi</th>
             </tr>
@@ -512,11 +646,12 @@
     let portalUserTersimpan = "";
     let portalPassTersimpan = "";
     let roleAktif = "";
+    let punyaApiKeyAktif = false;
     let dataMapelGlobal = [];
     let dataSesiGlobal = [];
     let daftarAkunGlobal = [];
     let jumlahSoalGlobal = {};
-    let soalHasilParse = [];
+    let soalHasilParse = []; // Setiap item memiliki properti { dipilih: true, ... }
 
     // --- ANIMASI PARTIKEL DINAMIS (SALJU PAGI/SIANG & KUNANG-KUNANG MALAM) ---
     function inisialisasiAnimasiSuasana() {
@@ -568,7 +703,6 @@
 
       function gambarFrame() {
         ctx.clearRect(0, 0, lebar, tinggi);
-
         if (isMalam) {
           for (const p of partikel) {
             p.x += p.vx + Math.sin(p.fase * 0.5) * 0.25;
@@ -598,10 +732,7 @@
             p.ayun += p.kecepatanAyun;
             p.x += Math.sin(p.ayun) * 0.65;
 
-            if (p.y > tinggi + 10) {
-              p.y = -10;
-              p.x = Math.random() * lebar;
-            }
+            if (p.y > tinggi + 10) { p.y = -10; p.x = Math.random() * lebar; }
             if (p.x > lebar + 10) p.x = -10;
             if (p.x < -10) p.x = lebar + 10;
 
@@ -615,10 +746,8 @@
             ctx.fill();
           }
         }
-
         requestAnimationFrame(gambarFrame);
       }
-
       gambarFrame();
     }
 
@@ -660,9 +789,11 @@
 
     function terapkanHakAksesUI(userObj) {
       roleAktif = String(userObj.role || '').trim().toUpperCase();
+      punyaApiKeyAktif = Boolean(userObj.punyaApiKey);
       const badge = document.getElementById("badge-hak-akses");
       const infoUser = document.getElementById("info-user-login");
-      infoUser.innerText = `Login sebagai: ${userObj.nama} (@${userObj.username})`;
+      const statusApi = punyaApiKeyAktif ? ' • <span style="color:#16a34a;">Gemini AI Aktif</span>' : ' • <span style="color:#d97706;">API Key Belum Diisi</span>';
+      infoUser.innerHTML = `Login sebagai: ${userObj.nama} (@${userObj.username})${statusApi}`;
 
       if (roleAktif === 'ADMIN') {
         badge.innerText = "ADMIN / PROKTOR";
@@ -698,12 +829,13 @@
         dataSesiGlobal = res.sesi || [];
         daftarAkunGlobal = res.daftarAkun || [];
         jumlahSoalGlobal = res.jumlahSoal || {};
+        punyaApiKeyAktif = Boolean(res.user.punyaApiKey);
 
         if (dariLogin) {
           document.getElementById("login-portal").style.display = "none";
           document.getElementById("dashboard-portal").style.display = "block";
-          terapkanHakAksesUI(res.user);
         }
+        terapkanHakAksesUI(res.user);
 
         isiDropdownMapel();
         if (roleAktif === 'ADMIN') {
@@ -713,6 +845,33 @@
         }
       } catch (err) {
         Swal.fire('Error', 'Gagal terhubung ke server GAS.', 'error');
+      }
+    }
+
+    async function bukaModalApiKeyMandiri() {
+      const { value: keyInput, isConfirmed } = await Swal.fire({
+        title: 'Pengaturan Gemini API Key',
+        html: `
+          <p style="font-size:13px; color:#475569; text-align:left; margin-bottom:10px;">
+            Masukkan <b>Gemini API Key</b> pribadi Anda (dari Google AI Studio) untuk mengaktifkan fitur <i>Generate Soal dengan Gemini AI</i>.
+          </p>
+          <input id="swal-gemini-key" type="text" class="swal2-input" style="margin:0; width:100%;" placeholder="Contoh: AIzaSy...">
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Simpan API Key',
+        cancelButtonText: 'Batal',
+        preConfirm: () => document.getElementById('swal-gemini-key').value.trim()
+      });
+
+      if (isConfirmed) {
+        Swal.fire({ title: 'Menyimpan API Key...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const res = await panggilGAS({ aksi: 'PORTAL_SIMPAN_APIKEY', geminiApiKey: keyInput });
+        if (res.status === 'success') {
+          Swal.fire('Berhasil', res.pesan, 'success');
+          muatDataPortal();
+        } else {
+          Swal.fire('Gagal', res.pesan, 'error');
+        }
       }
     }
 
@@ -778,6 +937,7 @@
       }
     }
 
+    // --- TAB 1: MONITORING ---
     function renderTabelSesi() {
       const fMapel = document.getElementById("filterMapel").value;
       const fStatus = document.getElementById("filterStatus").value;
@@ -845,9 +1005,9 @@
     function eksporNilaiCSV() {
       const fMapel = document.getElementById("filterMapel").value;
       const dataEkspor = fMapel ? dataSesiGlobal.filter(s => s.kodeMapel === fMapel) : dataSesiGlobal;
-      let csv = "UserID,Nama Peserta,Kelas,Kode Mapel,Status,Pelanggaran,Skor Akhir,Waktu Update\n";
+      let csv = "UserID,Nama Peserta,Kelas,Kode Mapel,Status,Pelanggaran,Skor Akhir,Catatan/Uraian,Waktu Update\n";
       dataEkspor.forEach(s => {
-        csv += `"${s.userId}","${s.nama}","${s.kelas}","${s.kodeMapel}","${s.status}",${s.pelanggaran},"${s.skor}","${s.update}"\n`;
+        csv += `"${s.userId}","${s.nama}","${s.kelas}","${s.kodeMapel}","${s.status}",${s.pelanggaran},"${s.skor}","${String(s.keterangan).replace(/"/g, '""')}","${s.update}"\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
@@ -856,6 +1016,7 @@
       link.click();
     }
 
+    // --- TAB 2: JADWAL & TOKEN ---
     function acakToken() {
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
       let token = "";
@@ -943,7 +1104,371 @@
       muatDataPortal();
     }
 
-    // --- KELOLA AKUN (TAMBAH, EDIT, HAPUS) ---
+    // --- TAB 3: INPUT / UPLOAD SOAL (EXCEL, MANUAL, GEMINI AI) ---
+    function pilihModeInputSoal(mode) {
+      document.getElementById("panel-input-excel").style.display = (mode === 'excel') ? 'block' : 'none';
+      document.getElementById("panel-input-manual").style.display = (mode === 'manual') ? 'block' : 'none';
+      document.getElementById("panel-input-gemini").style.display = (mode === 'gemini') ? 'block' : 'none';
+
+      document.getElementById("btn-mode-excel").classList.toggle('active', mode === 'excel');
+      document.getElementById("btn-mode-manual").classList.toggle('active', mode === 'manual');
+      document.getElementById("btn-mode-gemini").classList.toggle('active', mode === 'gemini');
+
+      if (mode === 'gemini') {
+        bukaDialogGeminiAI();
+      }
+    }
+
+    function ubahTampilanOpsiManual() {
+      const tipe = document.getElementById("manTipe").value;
+      const blokOpsi = document.getElementById("blok-opsi-manual");
+      const wrapD = document.getElementById("wrap-man-d");
+      const wrapE = document.getElementById("wrap-man-e");
+      const lblA = document.getElementById("lbl-man-a");
+      const lblB = document.getElementById("lbl-man-b");
+      const lblC = document.getElementById("lbl-man-c");
+      const lblKunci = document.getElementById("lbl-man-kunci");
+
+      if (tipe === 'URAIAN') {
+        blokOpsi.style.display = 'none';
+        lblKunci.innerText = 'Pedoman / Kunci Jawaban Uraian';
+      } else if (tipe === 'BS') {
+        blokOpsi.style.display = 'block';
+        wrapD.style.display = 'none';
+        wrapE.style.display = 'none';
+        lblA.innerText = 'Pernyataan 1';
+        lblB.innerText = 'Pernyataan 2';
+        lblC.innerText = 'Pernyataan 3';
+        lblKunci.innerText = 'Kunci Benar/Salah (Contoh: B,S,B)';
+      } else {
+        blokOpsi.style.display = 'block';
+        wrapD.style.display = 'block';
+        wrapE.style.display = 'block';
+        lblA.innerText = 'Opsi A';
+        lblB.innerText = 'Opsi B';
+        lblC.innerText = 'Opsi C';
+        lblKunci.innerText = (tipe === 'PGK') ? 'Kunci Jawaban Kompleks (Contoh: A,C,E)' : 'Kunci Jawaban (Contoh: C)';
+      }
+    }
+
+    async function sisipMediaManual(jenis) {
+      const labelJenis = jenis === 'IMG' ? 'Gambar' : (jenis === 'AUDIO' ? 'Audio (MP3)' : 'Video (MP4)');
+      const { value: url } = await Swal.fire({
+        title: `Sisipkan ${labelJenis} Google Drive`,
+        input: 'url',
+        inputLabel: 'Tempel Link Berbagi Google Drive:',
+        inputPlaceholder: 'https://drive.google.com/file/d/.../view?usp=sharing',
+        showCancelButton: true,
+        confirmButtonText: 'Sisipkan ke Soal'
+      });
+      if (url && url.trim() !== '') {
+        const area = document.getElementById("manTanya");
+        area.value += (area.value ? ' ' : '') + `[${jenis}:${url.trim()}]`;
+      }
+    }
+
+    function tambahSoalManualKeDaftar() {
+      const tipe = document.getElementById("manTipe").value;
+      const tanya = document.getElementById("manTanya").value.trim();
+      const a = tipe === 'URAIAN' ? '' : document.getElementById("manOpsiA").value.trim();
+      const b = tipe === 'URAIAN' ? '' : document.getElementById("manOpsiB").value.trim();
+      const c = tipe === 'URAIAN' ? '' : document.getElementById("manOpsiC").value.trim();
+      const d = (tipe === 'URAIAN' || tipe === 'BS') ? '' : document.getElementById("manOpsiD").value.trim();
+      const e = (tipe === 'URAIAN' || tipe === 'BS') ? '' : document.getElementById("manOpsiE").value.trim();
+      const kunci = document.getElementById("manKunci").value.trim().toUpperCase();
+
+      if (!tanya || !kunci) {
+        return Swal.fire('Data Belum Lengkap', 'Pertanyaan dan Kunci Jawaban wajib diisi!', 'warning');
+      }
+
+      soalHasilParse.push({
+        dipilih: true,
+        no: soalHasilParse.length + 1,
+        tipe, tanya, a, b, c, d, e, kunci
+      });
+
+      document.getElementById("manTanya").value = "";
+      document.getElementById("manOpsiA").value = "";
+      document.getElementById("manOpsiB").value = "";
+      document.getElementById("manOpsiC").value = "";
+      document.getElementById("manOpsiD").value = "";
+      document.getElementById("manOpsiE").value = "";
+      document.getElementById("manKunci").value = "";
+
+      renderTabelPreviewSoal();
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Soal manual ditambahkan ke daftar', showConfirmButton: false, timer: 1800 });
+    }
+
+    async function bukaDialogGeminiAI() {
+      if (!punyaApiKeyAktif) {
+        const tanyaKey = await Swal.fire({
+          icon: 'warning',
+          title: 'Gemini API Key Belum Diatur',
+          text: 'Akun Anda belum memiliki Gemini API Key. Apakah Anda ingin memasukkan API Key sekarang?',
+          showCancelButton: true,
+          confirmButtonText: 'Ya, Atur API Key',
+          cancelButtonText: 'Batal'
+        });
+        if (tanyaKey.isConfirmed) bukaModalApiKeyMandiri();
+        return;
+      }
+
+      const selectMapel = document.getElementById("uploadTargetMapel");
+      const teksMapel = selectMapel.options[selectMapel.selectedIndex]?.text || "Mata Pelajaran";
+
+      const { value: aiParams } = await Swal.fire({
+        title: '✨ Generate Soal dengan Gemini AI',
+        width: '680px',
+        html: `
+          <div style="text-align:left; font-size:13px;">
+            <div style="background:#eff6ff; padding:8px 12px; border-radius:6px; margin-bottom:10px; color:#1e3a8a;">
+              Mata Pelajaran Tujuan: <b>${teksMapel}</b>
+            </div>
+
+            <label style="font-weight:bold;">1. Detail Tujuan Pembelajaran / Ringkasan Materi *</label>
+            <textarea id="ai-tujuan" rows="3" style="margin:4px 0 12px 0; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;" placeholder="Contoh: Peserta didik mampu menganalisis konfigurasi VLAN pada switch manageable dan memecahkan masalah routing antar-VLAN."></textarea>
+
+            <label style="font-weight:bold;">2. Link URL Media Google Drive (Opsional - Gambar, Audio, Video)</label>
+            <div style="display:grid; grid-template-columns: 1fr; gap:6px; margin:4px 0 12px 0; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+              <input id="ai-media-img" type="url" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;" placeholder="🖼️ Link Gambar Google Drive (opsional)">
+              <input id="ai-media-audio" type="url" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;" placeholder="🔊 Link Audio MP3 Google Drive (opsional)">
+              <input id="ai-media-video" type="url" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;" placeholder="🎬 Link Video MP4 Google Drive (opsional)">
+            </div>
+
+            <label style="font-weight:bold;">3. Pengaturan Jenis & Jumlah Soal</label>
+            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-top:6px;">
+              <div style="background:#f8fafc; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;">
+                <span style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Pilihan Ganda (PG)</span>
+                <input id="ai-jml-pg" type="number" min="0" max="40" value="5" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px;">
+              </div>
+              <div style="background:#f8fafc; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;">
+                <span style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">PG Kompleks (>1 Jawaban)</span>
+                <input id="ai-jml-pgk" type="number" min="0" max="20" value="2" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px;">
+              </div>
+              <div style="background:#f8fafc; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;">
+                <span style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">PG Kompleks (Benar/Salah)</span>
+                <input id="ai-jml-bs" type="number" min="0" max="20" value="2" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px;">
+              </div>
+              <div style="background:#f8fafc; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;">
+                <span style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Soal Uraian / Esai</span>
+                <input id="ai-jml-uraian" type="number" min="0" max="15" value="1" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px;">
+              </div>
+            </div>
+          </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: '🚀 Generate Soal Sekarang',
+        confirmButtonColor: '#7c3aed',
+        cancelButtonText: 'Batal',
+        preConfirm: () => {
+          const tujuanPembelajaran = document.getElementById('ai-tujuan').value.trim();
+          const imgUrl = document.getElementById('ai-media-img').value.trim();
+          const audioUrl = document.getElementById('ai-media-audio').value.trim();
+          const videoUrl = document.getElementById('ai-media-video').value.trim();
+
+          const jumlahPG = Number(document.getElementById('ai-jml-pg').value) || 0;
+          const jumlahPGK = Number(document.getElementById('ai-jml-pgk').value) || 0;
+          const jumlahBS = Number(document.getElementById('ai-jml-bs').value) || 0;
+          const jumlahUraian = Number(document.getElementById('ai-jml-uraian').value) || 0;
+
+          if (!tujuanPembelajaran) {
+            Swal.showValidationMessage('Detail Tujuan Pembelajaran wajib diisi!');
+            return false;
+          }
+          if ((jumlahPG + jumlahPGK + jumlahBS + jumlahUraian) <= 0) {
+            Swal.showValidationMessage('Minimal salah satu jumlah soal harus lebih dari 0!');
+            return false;
+          }
+
+          const mediaList = [];
+          if (imgUrl) mediaList.push({ jenis: 'IMG', url: imgUrl, keterangan: 'Gambar stimulus soal' });
+          if (audioUrl) mediaList.push({ jenis: 'AUDIO', url: audioUrl, keterangan: 'Audio stimulus soal' });
+          if (videoUrl) mediaList.push({ jenis: 'VIDEO', url: videoUrl, keterangan: 'Video stimulus soal' });
+
+          return { namaMapel: teksMapel, tujuanPembelajaran, mediaList, jumlahPG, jumlahPGK, jumlahBS, jumlahUraian };
+        }
+      });
+
+      if (aiParams) {
+        Swal.fire({
+          title: 'Gemini AI Sedang Menyusun Soal...',
+          text: 'Proses ini memakan waktu sekitar 5–15 detik. Mohon tunggu.',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+
+        try {
+          const res = await panggilGAS({ aksi: 'PORTAL_GENERATE_GEMINI', ...aiParams });
+          if (res.status === 'success' && Array.isArray(res.soal)) {
+            const hasilDenganCheckbox = res.soal.map(s => ({ ...s, dipilih: true }));
+            soalHasilParse = [...soalHasilParse, ...hasilDenganCheckbox];
+            renderTabelPreviewSoal();
+            Swal.fire('Berhasil!', `Gemini AI menghasilkan ${res.soal.length} soal. Silakan centang soal yang ingin digunakan lalu klik Simpan.`, 'success');
+          } else {
+            Swal.fire('Gagal Generate Soal', res.pesan || 'Terjadi kesalahan pada layanan Gemini AI.', 'error');
+          }
+        } catch (err) {
+          Swal.fire('Error', 'Gagal terhubung ke server GAS.', 'error');
+        }
+      }
+    }
+
+    function renderTabelPreviewSoal() {
+      if (soalHasilParse.length === 0) {
+        document.getElementById("preview-upload-box").style.display = "none";
+        return;
+      }
+
+      const jumlahTerpilih = soalHasilParse.filter(s => s.dipilih).length;
+      document.getElementById("judul-preview").innerText = `Daftar Soal Siap Simpan (${jumlahTerpilih} dari ${soalHasilParse.length} soal dicentang)`;
+      document.getElementById("cekPilihSemuaSoal").checked = (jumlahTerpilih === soalHasilParse.length);
+
+      document.getElementById("tbody-preview-soal").innerHTML = soalHasilParse.map((s, idx) => `
+        <tr style="${s.dipilih ? '' : 'opacity:0.48; background:#f1f5f9;'}">
+          <td style="text-align:center;">
+            <input type="checkbox" ${s.dipilih ? 'checked' : ''} onchange="togglePilihSatuSoal(${idx}, this.checked)">
+          </td>
+          <td>${idx + 1}</td>
+          <td><b>${s.tipe}</b></td>
+          <td>${s.tanya}</td>
+          <td>${s.a}</td>
+          <td>${s.b}</td>
+          <td>${s.c}</td>
+          <td>${s.d}</td>
+          <td>${s.e}</td>
+          <td><b>${s.kunci}</b></td>
+        </tr>`).join('');
+
+      document.getElementById("preview-upload-box").style.display = "block";
+    }
+
+    function togglePilihSatuSoal(idx, status) {
+      if (soalHasilParse[idx]) {
+        soalHasilParse[idx].dipilih = status;
+        renderTabelPreviewSoal();
+      }
+    }
+
+    function togglePilihSemuaPreview(status) {
+      soalHasilParse.forEach(s => s.dipilih = status);
+      renderTabelPreviewSoal();
+    }
+
+    function bersihkanDaftarPreview() {
+      soalHasilParse = [];
+      document.getElementById("fileSoalInput").value = "";
+      document.getElementById("preview-upload-box").style.display = "none";
+    }
+
+    function downloadTemplateExcel() {
+      const dataContoh = [
+        ["No", "Tipe", "Pertanyaan", "OpsiA", "OpsiB", "OpsiC", "OpsiD", "OpsiE", "Kunci"],
+        [1, "PG", "Ibu kota Provinsi Jawa Timur adalah...", "Malang", "Kediri", "Surabaya", "Madiun", "Blitar", "C"],
+        [2, "PGK", "Manakah perangkat keras input komputer? (Pilih lebih dari 1)", "Keyboard", "Monitor", "Mouse", "Printer", "Scanner", "A,C,E"],
+        [3, "BS", "Tentukan Benar atau Salah pernyataan berikut:", "Kabel UTP digunakan untuk jaringan LAN", "IPv4 terdiri dari 64 bit", "Router menghubungkan dua jaringan berbeda", "", "", "B,S,B"],
+        [4, "URAIAN", "Jelaskan fungsi utama DHCP Server dalam jaringan komputer!", "", "", "", "", "", "Memberikan alamat IP secara otomatis kepada perangkat klien"],
+        [5, "PG", "Perhatikan gambar topologi berikut! [IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_SOAL/view?usp=sharing] Perangkat yang berada di tengah adalah...", "Hub", "Switch", "Router", "Access Point", "Modem", "B"],
+        [6, "PG", "Dengarkan audio percakapan berikut! [AUDIO:https://drive.google.com/file/d/GANTI_ID_FILE_MP3/view?usp=sharing] Di manakah percakapan tersebut terjadi?", "Perpustakaan", "Kantin Sekolah", "Laboratorium Komputer", "Ruang Guru", "Bengkel Otomotif", "C"]
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(dataContoh);
+      ws['!cols'] = [
+        { wch: 5 }, { wch: 8 }, { wch: 55 },
+        { wch: 32 }, { wch: 32 }, { wch: 32 }, { wch: 32 }, { wch: 32 },
+        { wch: 15 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "TemplateSoal");
+      XLSX.writeFile(wb, "Template_Soal_SMKN1_Purwoasri.xlsx");
+    }
+
+    function bacaFileExcel(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetPertama = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheetPertama, { defval: "" });
+
+        const hasilExcel = rows.map((r, idx) => ({
+          dipilih: true,
+          no: r.No || (idx + 1),
+          tipe: String(r.Tipe || 'PG').trim().toUpperCase(),
+          tanya: String(r.Pertanyaan || ''),
+          a: String(r.OpsiA || ''),
+          b: String(r.OpsiB || ''),
+          c: String(r.OpsiC || ''),
+          d: String(r.OpsiD || ''),
+          e: String(r.OpsiE || ''),
+          kunci: String(r.Kunci || '').trim()
+        })).filter(s => s.tanya.trim() !== "");
+
+        soalHasilParse = [...soalHasilParse, ...hasilExcel];
+        renderTabelPreviewSoal();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function kirimSoalKeServer() {
+      const kodeMapel = document.getElementById("uploadTargetMapel").value;
+      const timpaSoalLama = document.getElementById("modeTimpaSoal").value === "true";
+      const soalTerpilih = soalHasilParse.filter(s => s.dipilih);
+
+      if (!kodeMapel || soalTerpilih.length === 0) {
+        return Swal.fire('Peringatan', 'Pilih mata pelajaran dan centang minimal 1 soal untuk disimpan!', 'warning');
+      }
+
+      Swal.fire({ title: `Menyimpan ${soalTerpilih.length} Soal...`, text: 'Mohon tunggu sebentar', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const res = await panggilGAS({
+        aksi: 'PORTAL_UPLOAD_SOAL',
+        kodeMapel,
+        daftarSoal: soalTerpilih,
+        timpaSoalLama
+      });
+
+      if (res.status === 'success') {
+        Swal.fire('Berhasil!', res.pesan, 'success');
+        bersihkanDaftarPreview();
+        muatDataPortal();
+      } else {
+        Swal.fire('Gagal', res.pesan, 'error');
+      }
+    }
+
+    // --- TAB 4: CEK BANK SOAL ---
+    async function muatSoalMapel() {
+      const kodeMapel = document.getElementById("cekTargetMapel").value;
+      if (!kodeMapel) return;
+
+      Swal.fire({ title: 'Mengambil Bank Soal...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const res = await panggilGAS({ aksi: 'PORTAL_LIHAT_SOAL', kodeMapel });
+      Swal.close();
+
+      const tbody = document.getElementById("tbody-cek-soal");
+      if (res.status === 'success' && res.soal.length > 0) {
+        tbody.innerHTML = res.soal.map(s => `
+          <tr>
+            <td>${s.no}</td>
+            <td><b>${s.tipe}</b></td>
+            <td>${s.tanya}</td>
+            <td>${s.a}</td>
+            <td>${s.b}</td>
+            <td>${s.c}</td>
+            <td>${s.d}</td>
+            <td>${s.e}</td>
+            <td><b>${s.kunci}</b></td>
+          </tr>`).join('');
+      } else {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#dc2626;">Belum ada soal tersimpan untuk mata pelajaran ini.</td></tr>`;
+      }
+    }
+
+    // --- TAB 5: KELOLA AKUN (TAMBAH, EDIT, HAPUS + GEMINI API KEY) ---
     function renderTabelAkun() {
       const tbody = document.getElementById("tbody-akun");
       tbody.innerHTML = daftarAkunGlobal.map((a, idx) => {
@@ -952,11 +1477,16 @@
           ? `<span style="font-size:11px; color:#64748b; margin-left:6px;">(Sedang Login)</span>`
           : `<button class="btn btn-danger" style="padding:6px 10px; font-size:11px;" onclick="hapusAkunPortal(${idx})">🗑️ Hapus</button>`;
 
+        const statusKey = a.geminiApiKey
+          ? `<span style="background:#f3e8ff; color:#6b21a8; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:700;">✔ Terpasang (${a.geminiApiKey.slice(0, 6)}...)</span>`
+          : `<span style="color:#94a3b8; font-size:12px;">Belum diisi</span>`;
+
         return `
           <tr>
             <td><b>${a.username}</b></td>
             <td>${a.nama}</td>
             <td><span class="badge ${a.role === 'ADMIN' ? 'role-admin' : 'role-guru'}">${a.role}</span></td>
+            <td>${statusKey}</td>
             <td><span class="badge ${a.status === 'AKTIF' ? 'bg-selesai' : 'bg-terkunci'}">${a.status}</span></td>
             <td style="white-space:nowrap;">
               <button class="btn btn-warning" style="padding:6px 10px; font-size:11px;" onclick="editAkunPortal(${idx})">✏️ Edit</button>
@@ -971,18 +1501,20 @@
       const password = document.getElementById("newAkunPass").value.trim();
       const nama = document.getElementById("newAkunNama").value.trim();
       const roleBaru = document.getElementById("newAkunRole").value;
+      const geminiApiKey = document.getElementById("newAkunApiKey").value.trim();
 
       if (!username || password.length < 5 || !nama) {
         return Swal.fire('Data Kurang', 'Isi Username, Password (min. 5 karakter), dan Nama Lengkap!', 'warning');
       }
 
       Swal.fire({ title: 'Menyimpan Akun...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      const res = await panggilGAS({ aksi: 'ADMIN_TAMBAH_AKUN', username, password, nama, roleBaru });
+      const res = await panggilGAS({ aksi: 'ADMIN_TAMBAH_AKUN', username, password, nama, roleBaru, geminiApiKey });
       if (res.status === 'success') {
         Swal.fire('Berhasil', res.pesan, 'success');
         document.getElementById("newAkunUser").value = "";
         document.getElementById("newAkunPass").value = "";
         document.getElementById("newAkunNama").value = "";
+        document.getElementById("newAkunApiKey").value = "";
         muatDataPortal();
       } else {
         Swal.fire('Gagal', res.pesan, 'error');
@@ -998,17 +1530,20 @@
         html: `
           <div style="text-align:left; font-size:13px;">
             <label style="font-weight:bold;">Username Login</label>
-            <input id="edit-akun-user" class="swal2-input" style="margin:4px 0 12px 0; width:100%;" value="${akun.username}">
+            <input id="edit-akun-user" class="swal2-input" style="margin:4px 0 10px 0; width:100%;" value="${akun.username}">
             
             <label style="font-weight:bold;">Nama Lengkap & Gelar</label>
-            <input id="edit-akun-nama" class="swal2-input" style="margin:4px 0 12px 0; width:100%;" value="${akun.nama}">
+            <input id="edit-akun-nama" class="swal2-input" style="margin:4px 0 10px 0; width:100%;" value="${akun.nama}">
             
             <label style="font-weight:bold;">Reset Password Baru (Kosongkan jika tidak diubah)</label>
-            <input id="edit-akun-pass" type="text" class="swal2-input" style="margin:4px 0 12px 0; width:100%;" placeholder="Biarkan kosong jika tetap">
+            <input id="edit-akun-pass" type="text" class="swal2-input" style="margin:4px 0 10px 0; width:100%;" placeholder="Biarkan kosong jika tetap">
+
+            <label style="font-weight:bold;">Gemini API Key Guru (Untuk Generate Soal AI)</label>
+            <input id="edit-akun-apikey" type="text" class="swal2-input" style="margin:4px 0 10px 0; width:100%;" value="${akun.geminiApiKey || ''}" placeholder="AIzaSy...">
             
             <label style="font-weight:bold;">Hak Akses (Role)</label>
-            <select id="edit-akun-role" style="margin:4px 0 12px 0; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
-              <option value="GURU" ${akun.role === 'GURU' ? 'selected' : ''}>GURU (Hanya Upload & Cek Soal)</option>
+            <select id="edit-akun-role" style="margin:4px 0 10px 0; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
+              <option value="GURU" ${akun.role === 'GURU' ? 'selected' : ''}>GURU (Hanya Input & Cek Soal)</option>
               <option value="ADMIN" ${akun.role === 'ADMIN' ? 'selected' : ''}>ADMIN (Akses Penuh Proktor)</option>
             </select>
             
@@ -1027,6 +1562,7 @@
           const username = document.getElementById('edit-akun-user').value.trim();
           const nama = document.getElementById('edit-akun-nama').value.trim();
           const passwordBaru = document.getElementById('edit-akun-pass').value.trim();
+          const geminiApiKey = document.getElementById('edit-akun-apikey').value.trim();
           const roleBaru = document.getElementById('edit-akun-role').value;
           const statusBaru = document.getElementById('edit-akun-status').value;
 
@@ -1038,7 +1574,7 @@
             Swal.showValidationMessage('Password baru minimal 5 karakter!');
             return false;
           }
-          return { username, nama, passwordBaru, roleBaru, statusBaru };
+          return { username, nama, passwordBaru, geminiApiKey, roleBaru, statusBaru };
         }
       });
 
@@ -1086,125 +1622,6 @@
         muatDataPortal();
       } else {
         Swal.fire('Gagal', res.pesan, 'error');
-      }
-    }
-
-    // --- TEMPLATE EXCEL DENGAN CONTOH LENGKAP MEDIA (GAMBAR, AUDIO, VIDEO) ---
-    function downloadTemplateExcel() {
-      const dataContoh = [
-        ["No", "Tipe", "Pertanyaan", "OpsiA", "OpsiB", "OpsiC", "OpsiD", "OpsiE", "Kunci"],
-        [1, "PG", "Ibu kota Provinsi Jawa Timur adalah...", "Malang", "Kediri", "Surabaya", "Madiun", "Blitar", "C"],
-        [2, "PGK", "Manakah perangkat keras input komputer? (Pilih lebih dari 1)", "Keyboard", "Monitor", "Mouse", "Printer", "Scanner", "A,C,E"],
-        [3, "BS", "Tentukan Benar atau Salah pernyataan berikut:", "Kabel UTP digunakan untuk jaringan LAN", "IPv4 terdiri dari 64 bit", "Router menghubungkan dua jaringan berbeda", "", "", "B,S,B"],
-        [4, "PG", "Perhatikan gambar topologi berikut! [IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_SOAL/view?usp=sharing] Perangkat yang berada di tengah adalah...", "Hub", "Switch", "Router", "Access Point", "Modem", "B"],
-        [5, "PG", "Manakah simbol komponen resistor tetap pada pilihan di bawah ini?", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_A/view?usp=sharing]", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_B/view?usp=sharing]", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_C/view?usp=sharing]", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_D/view?usp=sharing]", "[IMG:https://drive.google.com/file/d/GANTI_ID_GAMBAR_OPSI_E/view?usp=sharing]", "A"],
-        [6, "PG", "Dengarkan audio percakapan berikut! [AUDIO:https://drive.google.com/file/d/GANTI_ID_FILE_MP3/view?usp=sharing] Di manakah percakapan tersebut terjadi? (Untuk video gunakan format [VIDEO:https://drive.google.com/file/d/GANTI_ID_FILE_MP4/view?usp=sharing])", "Perpustakaan", "Kantin Sekolah", "Laboratorium Komputer", "Ruang Guru", "Bengkel Otomotif", "C"]
-      ];
-
-      const ws = XLSX.utils.aoa_to_sheet(dataContoh);
-      ws['!cols'] = [
-        { wch: 5 }, { wch: 8 }, { wch: 55 },
-        { wch: 32 }, { wch: 32 }, { wch: 32 }, { wch: 32 }, { wch: 32 },
-        { wch: 10 }
-      ];
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "TemplateSoal");
-      XLSX.writeFile(wb, "Template_Soal_SMKN1_Purwoasri.xlsx");
-    }
-
-    function bacaFileExcel(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetPertama = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheetPertama, { defval: "" });
-
-        soalHasilParse = rows.map((r, idx) => ({
-          no: r.No || (idx + 1),
-          tipe: String(r.Tipe || 'PG').trim().toUpperCase(),
-          tanya: String(r.Pertanyaan || ''),
-          a: String(r.OpsiA || ''),
-          b: String(r.OpsiB || ''),
-          c: String(r.OpsiC || ''),
-          d: String(r.OpsiD || ''),
-          e: String(r.OpsiE || ''),
-          kunci: String(r.Kunci || '').trim().toUpperCase()
-        })).filter(s => s.tanya.trim() !== "");
-
-        document.getElementById("judul-preview").innerText = `Pratinjau: ${soalHasilParse.length} soal siap diunggah`;
-        document.getElementById("tbody-preview-soal").innerHTML = soalHasilParse.map(s => `
-          <tr>
-            <td>${s.no}</td>
-            <td><b>${s.tipe}</b></td>
-            <td>${s.tanya}</td>
-            <td>${s.a}</td>
-            <td>${s.b}</td>
-            <td>${s.c}</td>
-            <td>${s.d}</td>
-            <td>${s.e}</td>
-            <td><b>${s.kunci}</b></td>
-          </tr>`).join('');
-        document.getElementById("preview-upload-box").style.display = "block";
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    async function kirimSoalKeServer() {
-      const kodeMapel = document.getElementById("uploadTargetMapel").value;
-      const timpaSoalLama = document.getElementById("modeTimpaSoal").value === "true";
-
-      if (!kodeMapel || soalHasilParse.length === 0) {
-        return Swal.fire('Peringatan', 'Pilih mata pelajaran dan file soal terlebih dahulu!', 'warning');
-      }
-
-      Swal.fire({ title: 'Mengunggah Soal...', text: 'Mohon tunggu sebentar', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      const res = await panggilGAS({
-        aksi: 'PORTAL_UPLOAD_SOAL',
-        kodeMapel,
-        daftarSoal: soalHasilParse,
-        timpaSoalLama
-      });
-
-      if (res.status === 'success') {
-        Swal.fire('Berhasil!', res.pesan, 'success');
-        document.getElementById("fileSoalInput").value = "";
-        document.getElementById("preview-upload-box").style.display = "none";
-        soalHasilParse = [];
-        muatDataPortal();
-      } else {
-        Swal.fire('Gagal', res.pesan, 'error');
-      }
-    }
-
-    async function muatSoalMapel() {
-      const kodeMapel = document.getElementById("cekTargetMapel").value;
-      if (!kodeMapel) return;
-
-      Swal.fire({ title: 'Mengambil Bank Soal...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      const res = await panggilGAS({ aksi: 'PORTAL_LIHAT_SOAL', kodeMapel });
-      Swal.close();
-
-      const tbody = document.getElementById("tbody-cek-soal");
-      if (res.status === 'success' && res.soal.length > 0) {
-        tbody.innerHTML = res.soal.map(s => `
-          <tr>
-            <td>${s.no}</td>
-            <td><b>${s.tipe}</b></td>
-            <td>${s.tanya}</td>
-            <td>${s.a}</td>
-            <td>${s.b}</td>
-            <td>${s.c}</td>
-            <td>${s.d}</td>
-            <td>${s.e}</td>
-            <td><b>${s.kunci}</b></td>
-          </tr>`).join('');
-      } else {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#dc2626;">Belum ada soal tersimpan untuk mata pelajaran ini.</td></tr>`;
       }
     }
   </script>
