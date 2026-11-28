@@ -148,8 +148,8 @@
 
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
       background: #f8fafc;
       padding: 16px;
       border-radius: 10px;
@@ -157,6 +157,14 @@
       margin-bottom: 20px;
     }
     .form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #334155; }
+    
+    .datetime-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .datetime-row input[type="date"] { flex: 1.4; padding: 10px 10px; }
+    .datetime-row input[type="time"] { flex: 1; padding: 10px 10px; }
   </style>
 </head>
 <body>
@@ -263,12 +271,18 @@
           <input type="text" id="inNamaMapel" placeholder="Contoh: Matematika Wajib">
         </div>
         <div class="form-group">
-          <label>Waktu Mulai (YYYY-MM-DD HH:mm)</label>
-          <input type="text" id="inMulaiMapel" placeholder="2026-11-26 07:30">
+          <label>Waktu Mulai (Tanggal & Jam)</label>
+          <div class="datetime-row">
+            <input type="date" id="inMulaiTgl">
+            <input type="time" id="inMulaiJam" value="07:30">
+          </div>
         </div>
         <div class="form-group">
-          <label>Waktu Selesai (YYYY-MM-DD HH:mm)</label>
-          <input type="text" id="inSelesaiMapel" placeholder="2026-11-26 09:30">
+          <label>Waktu Selesai (Tanggal & Jam)</label>
+          <div class="datetime-row">
+            <input type="date" id="inSelesaiTgl">
+            <input type="time" id="inSelesaiJam" value="09:30">
+          </div>
         </div>
         <div class="form-group">
           <label>Token Ujian</label>
@@ -450,6 +464,13 @@
     let daftarAkunGlobal = [];
     let jumlahSoalGlobal = {};
     let soalHasilParse = [];
+
+    // Isi tanggal default hari ini ke datepicker jadwal
+    window.addEventListener("DOMContentLoaded", () => {
+      const hariIni = new Date().toISOString().split('T')[0];
+      document.getElementById("inMulaiTgl").value = hariIni;
+      document.getElementById("inSelesaiTgl").value = hariIni;
+    });
 
     async function panggilGAS(payload) {
       payload.portalUser = portalUserTersimpan;
@@ -702,42 +723,61 @@
         </tr>`).join('');
     }
 
+    // Memecah string "YYYY-MM-DD HH:mm" ke dalam Datepicker & Timepicker saat tombol Edit diklik
     function isiFormEditMapel(idx) {
       const m = dataMapelGlobal[idx];
       if (!m) return;
       document.getElementById("editBarisMapel").value = m.baris;
       document.getElementById("inKodeMapel").value = m.kode;
       document.getElementById("inNamaMapel").value = m.nama;
-      document.getElementById("inMulaiMapel").value = m.mulai;
-      document.getElementById("inSelesaiMapel").value = m.selesai;
+
+      const [mTgl, mJam] = String(m.mulai || '').split(' ');
+      document.getElementById("inMulaiTgl").value = mTgl || '';
+      document.getElementById("inMulaiJam").value = (mJam || '07:30').slice(0, 5);
+
+      const [sTgl, sJam] = String(m.selesai || '').split(' ');
+      document.getElementById("inSelesaiTgl").value = sTgl || '';
+      document.getElementById("inSelesaiJam").value = (sJam || '09:30').slice(0, 5);
+
       document.getElementById("inTokenMapel").value = m.token;
       document.getElementById("inStatusMapel").value = m.status;
     }
 
     function resetFormMapel() {
+      const hariIni = new Date().toISOString().split('T')[0];
       document.getElementById("editBarisMapel").value = "";
       document.getElementById("inKodeMapel").value = "";
       document.getElementById("inNamaMapel").value = "";
-      document.getElementById("inMulaiMapel").value = "";
-      document.getElementById("inSelesaiMapel").value = "";
+      document.getElementById("inMulaiTgl").value = hariIni;
+      document.getElementById("inMulaiJam").value = "07:30";
+      document.getElementById("inSelesaiTgl").value = hariIni;
+      document.getElementById("inSelesaiJam").value = "09:30";
       document.getElementById("inTokenMapel").value = "";
       document.getElementById("inStatusMapel").value = "AKTIF";
     }
 
     async function simpanJadwalMapel() {
+      const mTgl = document.getElementById("inMulaiTgl").value;
+      const mJam = document.getElementById("inMulaiJam").value;
+      const sTgl = document.getElementById("inSelesaiTgl").value;
+      const sJam = document.getElementById("inSelesaiJam").value;
+
       const payload = {
         aksi: 'ADMIN_SIMPAN_MAPEL',
         baris: document.getElementById("editBarisMapel").value ? Number(document.getElementById("editBarisMapel").value) : null,
         kode: document.getElementById("inKodeMapel").value.trim(),
         nama: document.getElementById("inNamaMapel").value.trim(),
-        mulai: document.getElementById("inMulaiMapel").value.trim(),
-        selesai: document.getElementById("inSelesaiMapel").value.trim(),
+        mulai: (mTgl && mJam) ? `${mTgl} ${mJam}` : "",
+        selesai: (sTgl && sJam) ? `${sTgl} ${sJam}` : "",
         token: document.getElementById("inTokenMapel").value.trim().toUpperCase(),
         status: document.getElementById("inStatusMapel").value
       };
 
       if (!payload.kode || !payload.nama || !payload.mulai || !payload.selesai || !payload.token) {
-        return Swal.fire('Data Kurang', 'Semua kolom jadwal dan token wajib diisi!', 'warning');
+        return Swal.fire('Data Kurang', 'Semua kolom jadwal (tanggal, jam) dan token wajib diisi!', 'warning');
+      }
+      if (new Date(payload.selesai) <= new Date(payload.mulai)) {
+        return Swal.fire('Jadwal Tidak Valid', 'Waktu Selesai harus lebih akhir daripada Waktu Mulai!', 'warning');
       }
 
       Swal.fire({ title: 'Menyimpan Jadwal...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
